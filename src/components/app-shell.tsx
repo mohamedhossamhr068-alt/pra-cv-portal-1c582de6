@@ -209,6 +209,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-muted-foreground">{me.data?.tenant?.name}</div>
           </div>
+          {typeof me.data?.credits === "number" && (
+            <div className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs sm:flex">
+              <span className="text-amber-500">●</span>
+              <span className="font-semibold">{me.data.credits}</span>
+              <span className="text-muted-foreground">credit</span>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
