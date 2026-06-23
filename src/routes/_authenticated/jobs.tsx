@@ -89,14 +89,14 @@ function Jobs() {
         <Card className="border-dashed">
           <CardContent className="flex flex-wrap items-center gap-2 py-4">
             <Input
-              placeholder="كلمة مفتاحية (اختياري): مثلاً React, Marketing…"
+              placeholder={t("jobs.scrapeHint")}
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               className="min-w-[200px] flex-1"
             />
             <Button onClick={() => scrape.mutate()} disabled={scrape.isPending} variant="outline" className="gap-2">
               <RefreshCw className={`h-4 w-4 ${scrape.isPending ? "animate-spin" : ""}`} />
-              جلب لايف من المنصات
+              {t("jobs.scrapeBtn")}
             </Button>
           </CardContent>
         </Card>
