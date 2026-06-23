@@ -66,26 +66,42 @@ export const scrapeEgyptJobs = createServerFn({ method: "POST" })
     const apiKey = process.env.FIRECRAWL_API_KEY;
     if (!apiKey) throw new Error("Firecrawl is not connected.");
 
-    const kw = (data.keyword ?? "").trim();
-    const queries = QUERIES.map((q) => ({ ...q, q: kw ? `${kw} ${q.q}` : q.q }));
+    let kw = (data.keyword ?? "").trim();
+    // If no keyword passed, auto-derive from the user's latest CV (job title / role).
+    if (!kw) {
+      const { data: cvs } = await supabase
+        .from("cv_logs").select("output").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(1);
+      const out: any = cvs?.[0]?.output;
+      kw = String(
+        out?.targetRole ?? out?.headline ?? out?.experience?.[0]?.role ?? out?.personalInfo?.title ?? "",
+      ).trim().split("\n")[0].slice(0, 60);
+    }
+    if (!kw) kw = "jobs";
+
+    const queries = SOURCES.map(({ host, source }) => ({
+      source,
+      q: `site:${host} "${kw}" Egypt`,
+    }));
 
     const collected: any[] = [];
     for (const { q, source } of queries) {
       try {
         const res = await fetch("https://api.firecrawl.dev/v2/search", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ query: q, limit: 6, lang: "en", country: "eg" }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ query: q, limit: 8, lang: "en", country: "eg", location: "Egypt" }),
         });
         if (!res.ok) continue;
         const json = await res.json();
         const results = json?.data?.web ?? json?.data ?? [];
         for (const r of results) {
           if (!r?.url || !r?.title) continue;
+          if (!isEgyptUrl(String(r.url))) continue; // hard Egypt filter
           const desc = String(r.description ?? r.snippet ?? r.markdown ?? "");
+          // Drop obvious non-Egypt mentions
+          if (/\b(saudi|riyadh|jeddah|dubai|abu dhabi|qatar|kuwait|oman|bahrain|usa|united states|uk|london)\b/i
+              .test(`${r.title} ${desc}`)) continue;
           const company = guessCompany(String(r.title), String(r.url));
           collected.push({
             title: String(r.title).slice(0, 200),
