@@ -299,7 +299,7 @@ function CvViewer() {
     try {
       const docx = await import("docx");
       const { saveAs } = await import("file-saver");
-      const { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } = docx;
+      const { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, ImageRun } = docx;
       const rtl = cvLang === "ar";
       const arabicFont = "Arial";
 
@@ -328,7 +328,34 @@ function CvViewer() {
           children: [run(text)],
         });
 
-      const children: any[] = [
+      const children: any[] = [];
+
+      // Embed profile photo at the top (if user uploaded one).
+      const avatarDataUrl = (input?.avatarDataUrl as string | undefined) || "";
+      if (avatarDataUrl.startsWith("data:image/")) {
+        try {
+          const m = avatarDataUrl.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/i);
+          if (m) {
+            const ext = m[1].toLowerCase();
+            const type = (ext === "jpg" ? "jpeg" : ext) as "png" | "jpeg" | "gif" | "webp";
+            const binary = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+            children.push(
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new ImageRun({
+                    type,
+                    data: binary,
+                    transformation: { width: 110, height: 110 },
+                  } as any),
+                ],
+              }),
+            );
+          }
+        } catch {}
+      }
+
+      children.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
           bidirectional: rtl,
@@ -340,9 +367,15 @@ function CvViewer() {
           children: [run(input.jobTitle || data.title.split(" — ")[1] || "", { size: 26, color: "555555" })],
           spacing: { after: 120 },
         }),
-      ];
+      );
       const contact = [input.email, input.phone, input.location].filter(Boolean).join(" • ");
-      if (contact) children.push(new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: rtl, children: [run(contact, { size: 20, color: "777777" })], spacing: { after: 240 } }));
+      if (contact) children.push(new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: rtl, children: [run(contact, { size: 20, color: "777777" })], spacing: { after: 120 } }));
+      const personal = [
+        input.birthDate ? `${rtl ? "تاريخ الميلاد" : "DOB"}: ${input.birthDate}` : null,
+        input.maritalStatus ? `${rtl ? "الحالة الاجتماعية" : "Marital status"}: ${input.maritalStatus}` : null,
+      ].filter(Boolean).join(" • ");
+      if (personal) children.push(new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: rtl, children: [run(personal, { size: 18, color: "888888" })], spacing: { after: 240 } }));
+
 
       children.push(h(cvLang === "ar" ? "الملخص المهني" : "Summary"));
       children.push(para(out.summary));
