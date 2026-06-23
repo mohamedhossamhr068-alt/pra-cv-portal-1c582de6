@@ -114,7 +114,7 @@ function UserRow({ user, onUpdate, pending }: { user: any; onUpdate: (p: any) =>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <div className="truncate text-sm font-semibold">{user.full_name ?? user.email}</div>
-            {isAdmin && <Badge variant="secondary" className="gap-1"><Shield className="h-3 w-3" /> Admin</Badge>}
+            {isAdmin && <Badge variant="secondary" className="gap-1"><Shield className="h-3 w-3" /> أدمن</Badge>}
             {user.is_blocked && <Badge variant="destructive" className="gap-1"><Ban className="h-3 w-3" /> محظور</Badge>}
           </div>
           <div className="truncate text-xs text-muted-foreground">{user.email}</div>
