@@ -23,6 +23,14 @@ type CvOut = {
   recommendations: string[];
 };
 
+type CvAnalysis = {
+  strengths: string[];
+  weaknesses: string[];
+  interviewQuestions: { question: string; hint: string }[];
+  improvementPlan: string[];
+  platforms: { name: string; url: string; fitScore: number; reason: string }[];
+};
+
 function CvViewer() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/_authenticated/cv/$id" });
