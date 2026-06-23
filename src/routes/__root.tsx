@@ -8,12 +8,6 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import "@fontsource/inter/400.css";
-import "@fontsource/inter/500.css";
-import "@fontsource/inter/600.css";
-import "@fontsource/inter/700.css";
-import "@fontsource/noto-sans-arabic/400.css";
-import "@fontsource/noto-sans-arabic/600.css";
 import "@/lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
 
