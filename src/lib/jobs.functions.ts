@@ -2,13 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+const MATCH_CREDIT_COST = 1;
+
 export const listJobs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data } = await context.supabase
       .from("job_listings")
       .select("*")
-      .order("created_at", { ascending: false })
+      .eq("country", "EG")
+      .order("posted_at", { ascending: false })
       .limit(100);
     return data ?? [];
   });
