@@ -865,11 +865,7 @@ function CvTemplate({
                 ))}
               </div>
             )}
-            {tenantName && (
-              <div className="mt-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: isCreative ? "rgba(255,255,255,0.7)" : "#94a3b8" }}>
-                {tenantName}
-              </div>
-            )}
+            {/* Tenant/portal stamp removed from CV — keep the document candidate-focused. */}
           </div>
         </div>
       </header>
