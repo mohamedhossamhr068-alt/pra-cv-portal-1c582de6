@@ -36,14 +36,14 @@ function Jobs() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["me"] });
-      toast.success("تم المطابقة وخصم 1 رصيد");
+      toast.success(t("jobs.matchOk"));
     },
     onError: (e: any) => {
       const msg = String(e?.message ?? "");
-      if (msg.includes("NO_CV")) toast.error("اعمل سي في الأول.");
-      else if (msg.includes("NO_CREDITS")) toast.error("الرصيد خلص. اطلب من الأدمن يزوّده.");
-      else if (msg.includes("BLOCKED")) toast.error("حسابك محظور.");
-      else toast.error(msg || "فشل");
+      if (msg.includes("NO_CV")) toast.error(t("jobs.needCv"));
+      else if (msg.includes("NO_CREDITS")) toast.error(t("jobs.noCredits"));
+      else if (msg.includes("BLOCKED")) toast.error(t("jobs.blocked"));
+      else toast.error(msg || t("jobs.scrapeFail"));
     },
   });
 
@@ -51,9 +51,9 @@ function Jobs() {
     mutationFn: () => scrapeFn({ data: { keyword: keyword || undefined } }),
     onSuccess: (r: any) => {
       qc.invalidateQueries({ queryKey: ["all-jobs"] });
-      toast.success(`تم جلب ${r?.inserted ?? 0} وظيفة من مصر`);
+      toast.success(t("jobs.scrapeOk", { n: r?.inserted ?? 0 }));
     },
-    onError: (e: any) => toast.error(String(e?.message ?? "فشل السكرابينج")),
+    onError: (e: any) => toast.error(String(e?.message ?? t("jobs.scrapeFail"))),
   });
 
   useEffect(() => {
@@ -69,18 +69,18 @@ function Jobs() {
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">وظائف مصر</h1>
-          <p className="text-sm text-muted-foreground">من LinkedIn و Wuzzuf و Bayt و Forasna. مطابقة ذكية بناءً على سي في.</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("jobs.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("jobs.sub")}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-sm">
             <Coins className="h-3.5 w-3.5 text-amber-500" />
             <span className="font-semibold">{me.data?.credits ?? 0}</span>
-            <span className="text-xs text-muted-foreground">رصيد</span>
+            <span className="text-xs text-muted-foreground">{t("jobs.creditsLabel")}</span>
           </div>
           <Button onClick={() => mut.mutate()} disabled={mut.isPending} className="gap-2">
             <Sparkles className="h-4 w-4" />
-            {mut.isPending ? "جاري المطابقة…" : "مطابقة (-1)"}
+            {mut.isPending ? t("jobs.matching") : t("jobs.runMatch")}
           </Button>
         </div>
       </div>
@@ -89,14 +89,14 @@ function Jobs() {
         <Card className="border-dashed">
           <CardContent className="flex flex-wrap items-center gap-2 py-4">
             <Input
-              placeholder="كلمة مفتاحية (اختياري): مثلاً React, Marketing…"
+              placeholder={t("jobs.scrapeHint")}
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               className="min-w-[200px] flex-1"
             />
             <Button onClick={() => scrape.mutate()} disabled={scrape.isPending} variant="outline" className="gap-2">
               <RefreshCw className={`h-4 w-4 ${scrape.isPending ? "animate-spin" : ""}`} />
-              جلب لايف من المنصات
+              {t("jobs.scrapeBtn")}
             </Button>
           </CardContent>
         </Card>
@@ -107,18 +107,18 @@ function Jobs() {
       ) : showMatches ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {data!.map((m: any) => (
-            <JobCard key={m.job_id} job={m.job} score={m.score} reasoning={m.reasoning} />
+            <JobCard key={m.job_id} job={m.job} score={m.score} reasoning={m.reasoning} t={t} />
           ))}
         </div>
       ) : (
         <>
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
-              كل الوظائف الحديثة من مصر. اعمل سي في واضغط "مطابقة" للحصول على نسبة قبول لكل وظيفة.
+              {t("jobs.allEgyptHint")}
             </CardContent>
           </Card>
           <div className="grid gap-3 sm:grid-cols-2">
-            {browseList.map((j: any) => <JobCard key={j.id} job={j} />)}
+            {browseList.map((j: any) => <JobCard key={j.id} job={j} t={t} />)}
           </div>
         </>
       )}
@@ -126,7 +126,7 @@ function Jobs() {
   );
 }
 
-function JobCard({ job, score, reasoning }: { job: any; score?: number; reasoning?: string }) {
+function JobCard({ job, score, reasoning, t }: { job: any; score?: number; reasoning?: string; t: any }) {
   if (!job) return null;
   const posted = job.posted_at ? new Date(job.posted_at) : null;
   const daysAgo = posted ? Math.floor((Date.now() - posted.getTime()) / 86400000) : null;
@@ -175,7 +175,7 @@ function JobCard({ job, score, reasoning }: { job: any; score?: number; reasonin
           <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{job.location}</span>
           {job.employment_type && <span>· {job.employment_type}</span>}
           {daysAgo !== null && (
-            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{daysAgo === 0 ? "اليوم" : `قبل ${daysAgo} يوم`}</span>
+            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{daysAgo === 0 ? t("jobs.today") : t("jobs.daysAgo", { n: daysAgo })}</span>
           )}
           {job.source && (
             <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${sourceColor[job.source] ?? "bg-muted text-foreground"}`}>
@@ -199,7 +199,7 @@ function JobCard({ job, score, reasoning }: { job: any; score?: number; reasonin
         {job.external_url && (
           <a href={job.external_url} target="_blank" rel="noreferrer" className="block">
             <Button variant="outline" size="sm" className="w-full gap-2">
-              قدّم على المنصة <ExternalLink className="h-3 w-3" />
+              {t("jobs.apply")} <ExternalLink className="h-3 w-3" />
             </Button>
           </a>
         )}

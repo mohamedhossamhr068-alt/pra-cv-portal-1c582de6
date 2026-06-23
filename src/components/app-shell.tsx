@@ -213,17 +213,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs sm:flex">
               <span className="text-amber-500">●</span>
               <span className="font-semibold">{me.data.credits}</span>
-              <span className="text-muted-foreground">credit</span>
+              <span className="text-muted-foreground">{t("jobs.creditsLabel")}</span>
             </div>
           )}
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => setLocale(i18n.language === "ar" ? "en" : "ar")}
-            className="gap-1.5"
+            className="gap-1.5 font-semibold"
+            aria-label="Toggle language"
           >
             <Globe2 className="h-4 w-4" />
-            {i18n.language === "ar" ? "EN" : "ع"}
+            {i18n.language === "ar" ? "English" : "العربية"}
           </Button>
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
