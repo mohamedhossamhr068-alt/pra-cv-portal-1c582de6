@@ -36,14 +36,14 @@ function Jobs() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["me"] });
-      toast.success("تم المطابقة وخصم 1 رصيد");
+      toast.success(t("jobs.matchOk"));
     },
     onError: (e: any) => {
       const msg = String(e?.message ?? "");
-      if (msg.includes("NO_CV")) toast.error("اعمل سي في الأول.");
-      else if (msg.includes("NO_CREDITS")) toast.error("الرصيد خلص. اطلب من الأدمن يزوّده.");
-      else if (msg.includes("BLOCKED")) toast.error("حسابك محظور.");
-      else toast.error(msg || "فشل");
+      if (msg.includes("NO_CV")) toast.error(t("jobs.needCv"));
+      else if (msg.includes("NO_CREDITS")) toast.error(t("jobs.noCredits"));
+      else if (msg.includes("BLOCKED")) toast.error(t("jobs.blocked"));
+      else toast.error(msg || t("jobs.scrapeFail"));
     },
   });
 
@@ -51,9 +51,9 @@ function Jobs() {
     mutationFn: () => scrapeFn({ data: { keyword: keyword || undefined } }),
     onSuccess: (r: any) => {
       qc.invalidateQueries({ queryKey: ["all-jobs"] });
-      toast.success(`تم جلب ${r?.inserted ?? 0} وظيفة من مصر`);
+      toast.success(t("jobs.scrapeOk", { n: r?.inserted ?? 0 }));
     },
-    onError: (e: any) => toast.error(String(e?.message ?? "فشل السكرابينج")),
+    onError: (e: any) => toast.error(String(e?.message ?? t("jobs.scrapeFail"))),
   });
 
   useEffect(() => {
