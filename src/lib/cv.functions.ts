@@ -357,3 +357,29 @@ export const deleteCv = createServerFn({ method: "POST" })
     await supabase.from("cv_logs").delete().eq("id", data.id).eq("user_id", userId);
     return { ok: true };
   });
+
+export const updateCvStyle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        template: z.string().min(1).max(60).optional(),
+        accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const patch: { template?: string; accent_color?: string } = {};
+    if (data.template) patch.template = data.template;
+    if (data.accent_color) patch.accent_color = data.accent_color;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await supabase
+      .from("cv_logs")
+      .update(patch as any)
+      .eq("id", data.id)
+      .eq("user_id", userId);
+    if (error) throw error;
+    return { ok: true };
+  });

@@ -1,8 +1,8 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useRef, useState } from "react";
-import { getCv } from "@/lib/cv.functions";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getCv, updateCvStyle } from "@/lib/cv.functions";
 import { useMeQuery } from "@/lib/me.hooks";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,7 @@ function CvViewer() {
   const ar = i18n.language === "ar";
   const { id } = useParams({ from: "/_authenticated/cv/$id" });
   const fn = useServerFn(getCv);
+  const saveStyleFn = useServerFn(updateCvStyle);
   const { data, isLoading } = useQuery({ queryKey: ["cv", id], queryFn: () => fn({ data: { id } }) });
   const me = useMeQuery();
   const tenant = me.data?.tenant;
@@ -75,11 +76,27 @@ function CvViewer() {
   const input = (data as any)?.input ?? {};
   const ats = useMemo(() => (out ? computeAtsScore(out, input) : null), [out, input]);
 
+  // Persist style choices (debounced) so PDF/print use the saved template + color
+  useEffect(() => {
+    if (!data) return;
+    if (selectedTemplate == null && selectedAccent == null) return;
+    const t = setTimeout(() => {
+      saveStyleFn({
+        data: {
+          id,
+          ...(selectedTemplate ? { template: selectedTemplate } : {}),
+          ...(selectedAccent ? { accent_color: selectedAccent } : {}),
+        },
+      }).catch(() => {});
+    }, 500);
+    return () => clearTimeout(t);
+  }, [selectedTemplate, selectedAccent, data, id, saveStyleFn]);
+
   if (isLoading || !data || !out) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
 
   const analysis = (data as any).analysis as CvAnalysis | null;
   const tpl = selectedTemplate ?? (data.template as string);
-  const accent = selectedAccent ?? tenant?.primary_color ?? "#4f46e5";
+  const accent = selectedAccent ?? (data as any).accent_color ?? tenant?.primary_color ?? "#4f46e5";
 
   const handleDownload = async () => {
     if (!pdfRef.current) return;
