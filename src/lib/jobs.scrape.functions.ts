@@ -6,10 +6,11 @@ import { z } from "zod";
 // Only company_admin or superadmin can trigger to avoid abuse / cost.
 
 const QUERIES = [
-  { q: "site:linkedin.com/jobs Egypt", source: "linkedin" },
-  { q: "site:wuzzuf.net jobs Egypt", source: "wuzzuf" },
-  { q: "site:bayt.com Egypt jobs", source: "bayt" },
-  { q: "site:forasna.com Egypt", source: "forasna" },
+  { q: `site:wuzzuf.net/jobs Egypt`, source: "wuzzuf" },
+  { q: `site:linkedin.com/jobs "Egypt"`, source: "linkedin" },
+  { q: `site:bayt.com/en/egypt jobs`, source: "bayt" },
+  { q: `site:forasna.com jobs`, source: "forasna" },
+  { q: `site:naukrigulf.com Egypt jobs`, source: "naukrigulf" },
 ];
 
 function logoFor(url: string, source: string) {
