@@ -46,7 +46,10 @@ const CvInputSchema = z.object({
   certifications: z.string().max(600).optional(),
   linkedinUrl: z.string().max(200).optional(),
   portfolioUrl: z.string().max(200).optional(),
+  birthDate: z.string().max(40).optional(),
+  maritalStatus: z.string().max(40).optional(),
 });
+
 
 type CvInput = z.infer<typeof CvInputSchema>;
 type CvOutput = z.infer<typeof CvOutputSchema>;
