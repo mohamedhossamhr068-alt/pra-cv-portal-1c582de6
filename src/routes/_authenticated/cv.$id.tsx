@@ -535,7 +535,7 @@ function CvViewer() {
         </CardContent>
       </Card>
 
-      {analysis && <AnalysisSection analysis={analysis} accent={accent} ar={ar} />}
+      {analysis && <AnalysisSection analysis={analysis} recommendations={out.recommendations ?? []} accent={accent} ar={ar} />}
     </div>
   );
 }
