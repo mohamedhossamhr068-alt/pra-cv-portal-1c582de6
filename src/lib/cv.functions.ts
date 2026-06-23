@@ -283,7 +283,14 @@ Education: ${data.education || "not provided"}
 Certifications: ${data.certifications || "not provided"}
 LinkedIn: ${data.linkedinUrl || "not provided"}
 Portfolio: ${data.portfolioUrl || "not provided"}
+Date of birth: ${data.birthDate || "not provided"}
+Marital status: ${data.maritalStatus || "not provided"}
 Skills (raw): ${data.skills}
+Experience (raw — companies, dates, responsibilities described by candidate):
+${data.experience}
+
+IMPORTANT: From the "Experience (raw)" text, extract each distinct company/employer the candidate mentions and create one entry per company in the "experience" array, populating "role", "company", and "dates" exactly as the candidate wrote them. Never merge multiple jobs into one entry. If dates are missing for a job, write "Not specified" — do NOT invent dates.
+
 Experience (raw): ${data.experience}
 
 Produce an ATS-optimized CV with exactly these JSON keys:
