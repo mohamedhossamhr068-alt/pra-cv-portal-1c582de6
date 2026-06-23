@@ -130,12 +130,18 @@ function JobCard({ job, score, reasoning, t }: { job: any; score?: number; reaso
   if (!job) return null;
   const posted = job.posted_at ? new Date(job.posted_at) : null;
   const daysAgo = posted ? Math.floor((Date.now() - posted.getTime()) / 86400000) : null;
-  const sourceColor: Record<string, string> = {
-    linkedin: "bg-[#0A66C2] text-white",
-    wuzzuf: "bg-emerald-600 text-white",
-    bayt: "bg-rose-600 text-white",
-    forasna: "bg-orange-600 text-white",
+  const sourceMeta: Record<string, { label: string; bg: string; logo: string; domain: string }> = {
+    linkedin: { label: "LinkedIn", bg: "#0A66C2", logo: "https://cdn.simpleicons.org/linkedin/ffffff", domain: "linkedin.com" },
+    wuzzuf:   { label: "Wuzzuf",   bg: "#059669", logo: "https://www.google.com/s2/favicons?domain=wuzzuf.net&sz=64", domain: "wuzzuf.net" },
+    bayt:     { label: "Bayt",     bg: "#e11d48", logo: "https://www.google.com/s2/favicons?domain=bayt.com&sz=64", domain: "bayt.com" },
+    forasna:  { label: "Forasna",  bg: "#ea580c", logo: "https://www.google.com/s2/favicons?domain=forasna.com&sz=64", domain: "forasna.com" },
+    indeed:   { label: "Indeed",   bg: "#2557a7", logo: "https://cdn.simpleicons.org/indeed/ffffff", domain: "indeed.com" },
+    glassdoor:{ label: "Glassdoor",bg: "#0CAA41", logo: "https://cdn.simpleicons.org/glassdoor/ffffff", domain: "glassdoor.com" },
+    naukrigulf:{label: "NaukriGulf",bg: "#1e40af", logo: "https://www.google.com/s2/favicons?domain=naukrigulf.com&sz=64", domain: "naukrigulf.com" },
+    tanqeeb:  { label: "Tanqeeb",  bg: "#0f766e", logo: "https://www.google.com/s2/favicons?domain=tanqeeb.com&sz=64", domain: "tanqeeb.com" },
   };
+  const srcKey = String(job.source ?? "").toLowerCase();
+  const src = sourceMeta[srcKey];
 
   return (
     <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
