@@ -63,12 +63,15 @@ function NewCv() {
     erp: "",
     linkedinUrl: "",
     portfolioUrl: "",
+    birthDate: "",
+    maritalStatus: "" as "" | "single" | "married" | "divorced" | "widowed",
     template: "modern_executive" as "modern_executive" | "corporate_minimal" | "creative_professional",
     avatarDataUrl: "" as string,
     email: "",
     phone: "",
     location: "",
   });
+
   const [langDraft, setLangDraft] = useState<{ name: string; level: string }>({ name: "", level: "intermediate" });
 
   const onPickAvatar = async (file: File) => {
