@@ -126,7 +126,7 @@ function Jobs() {
   );
 }
 
-function JobCard({ job, score, reasoning }: { job: any; score?: number; reasoning?: string }) {
+function JobCard({ job, score, reasoning, t }: { job: any; score?: number; reasoning?: string; t: any }) {
   if (!job) return null;
   const posted = job.posted_at ? new Date(job.posted_at) : null;
   const daysAgo = posted ? Math.floor((Date.now() - posted.getTime()) / 86400000) : null;
