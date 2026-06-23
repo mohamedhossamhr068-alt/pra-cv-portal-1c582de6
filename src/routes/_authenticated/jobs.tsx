@@ -130,18 +130,36 @@ function JobCard({ job, score, reasoning, t }: { job: any; score?: number; reaso
   if (!job) return null;
   const posted = job.posted_at ? new Date(job.posted_at) : null;
   const daysAgo = posted ? Math.floor((Date.now() - posted.getTime()) / 86400000) : null;
-  const sourceMeta: Record<string, { label: string; bg: string; logo: string; domain: string }> = {
-    linkedin:  { label: "LinkedIn",   bg: "#0A66C2", domain: "linkedin.com",   logo: "https://www.google.com/s2/favicons?domain=linkedin.com&sz=128" },
-    wuzzuf:    { label: "Wuzzuf",     bg: "#059669", domain: "wuzzuf.net",     logo: "https://www.google.com/s2/favicons?domain=wuzzuf.net&sz=128" },
-    bayt:      { label: "Bayt",       bg: "#e11d48", domain: "bayt.com",       logo: "https://www.google.com/s2/favicons?domain=bayt.com&sz=128" },
-    forasna:   { label: "Forasna",    bg: "#ea580c", domain: "forasna.com",    logo: "https://www.google.com/s2/favicons?domain=forasna.com&sz=128" },
-    indeed:    { label: "Indeed",     bg: "#2557a7", domain: "indeed.com",     logo: "https://www.google.com/s2/favicons?domain=indeed.com&sz=128" },
-    glassdoor: { label: "Glassdoor",  bg: "#0CAA41", domain: "glassdoor.com",  logo: "https://www.google.com/s2/favicons?domain=glassdoor.com&sz=128" },
-    naukrigulf:{ label: "NaukriGulf", bg: "#1e40af", domain: "naukrigulf.com", logo: "https://www.google.com/s2/favicons?domain=naukrigulf.com&sz=128" },
-    tanqeeb:   { label: "Tanqeeb",    bg: "#0f766e", domain: "tanqeeb.com",    logo: "https://www.google.com/s2/favicons?domain=tanqeeb.com&sz=128" },
+  const sourceMeta: Record<string, { label: string; bg: string; domain: string }> = {
+    linkedin:  { label: "LinkedIn",   bg: "#0A66C2", domain: "linkedin.com" },
+    wuzzuf:    { label: "Wuzzuf",     bg: "#059669", domain: "wuzzuf.net" },
+    bayt:      { label: "Bayt",       bg: "#e11d48", domain: "bayt.com" },
+    forasna:   { label: "Forasna",    bg: "#ea580c", domain: "forasna.com" },
+    indeed:    { label: "Indeed",     bg: "#2557a7", domain: "indeed.com" },
+    glassdoor: { label: "Glassdoor",  bg: "#0CAA41", domain: "glassdoor.com" },
+    naukrigulf:{ label: "NaukriGulf", bg: "#1e40af", domain: "naukrigulf.com" },
+    tanqeeb:   { label: "Tanqeeb",    bg: "#0f766e", domain: "tanqeeb.com" },
   };
   const srcKey = String(job.source ?? "").toLowerCase();
   const src = sourceMeta[srcKey];
+  // Multi-source fallback chain: Clearbit (high quality) → DuckDuckGo → Google
+  const logoChain = (domain: string) => [
+    `https://logo.clearbit.com/${domain}`,
+    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+  ];
+  const advanceLogo = (e: React.SyntheticEvent<HTMLImageElement>, chain: string[]) => {
+    const el = e.currentTarget;
+    const idx = Number(el.dataset.idx ?? "0");
+    const next = idx + 1;
+    if (next < chain.length) {
+      el.dataset.idx = String(next);
+      el.src = chain[next];
+    } else {
+      el.style.display = "none";
+    }
+  };
+
 
   return (
     <Card className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
