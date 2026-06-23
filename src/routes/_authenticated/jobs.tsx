@@ -114,7 +114,7 @@ function Jobs() {
         <>
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
-              كل الوظائف الحديثة من مصر. اعمل سي في واضغط "مطابقة" للحصول على نسبة قبول لكل وظيفة.
+              {t("jobs.allEgyptHint")}
             </CardContent>
           </Card>
           <div className="grid gap-3 sm:grid-cols-2">
