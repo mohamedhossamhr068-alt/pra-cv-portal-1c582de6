@@ -728,11 +728,17 @@ function CvTemplate({
   const isElegant = template === "elegant_serif";
   const isMono = template === "mono_dark";
   const avatar = input?.avatarDataUrl as string | undefined;
+  const personalLabels = (input?.locale === "ar")
+    ? { dob: "تاريخ الميلاد", marital: "الحالة الاجتماعية" }
+    : { dob: "DOB", marital: "Marital status" };
   const contactItems = [
     input?.email ? { icon: <Mail className="h-3 w-3" />, text: input.email } : null,
     input?.phone ? { icon: <Phone className="h-3 w-3" />, text: input.phone } : null,
     input?.location ? { icon: <MapPin className="h-3 w-3" />, text: input.location } : null,
+    input?.birthDate ? { icon: <FileText className="h-3 w-3" />, text: `${personalLabels.dob}: ${input.birthDate}` } : null,
+    input?.maritalStatus ? { icon: <FileText className="h-3 w-3" />, text: `${personalLabels.marital}: ${input.maritalStatus}` } : null,
   ].filter(Boolean) as { icon: any; text: string }[];
+
 
   // Sidebar layout: completely different structure
   if (isSidebar) {
