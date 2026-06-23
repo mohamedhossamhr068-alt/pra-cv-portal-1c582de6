@@ -238,6 +238,56 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_percent: number
+          id: string
+          is_active: boolean
+          tenant_id: string
+          title: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          is_active?: boolean
+          tenant_id: string
+          title: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          is_active?: boolean
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           account_name: string | null

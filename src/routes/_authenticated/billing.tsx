@@ -4,9 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { useMeQuery } from "@/lib/me.hooks";
 import { getTenantPricing } from "@/lib/admin.functions";
+import { listActiveOffers } from "@/lib/offers.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   component: Billing,
@@ -21,7 +23,9 @@ function Billing() {
   const me = useMeQuery();
   const currentPlan = me.data?.subscription?.plan ?? "free";
   const getPricing = useServerFn(getTenantPricing);
+  const listOffersFn = useServerFn(listActiveOffers);
   const { data: pricing } = useQuery({ queryKey: ["tenant-pricing"], queryFn: () => getPricing() });
+  const { data: offers = [] } = useQuery({ queryKey: ["offers-active"], queryFn: () => listOffersFn() });
 
   const currency = (pricing as any)?.currency ?? "USD";
   const symbol = SYMBOLS[currency] ?? currency;
@@ -39,6 +43,33 @@ function Billing() {
           {t("billing.current")}: <span className="font-medium text-foreground capitalize">{currentPlan}</span>
         </p>
       </div>
+
+      {offers.length > 0 && (
+        <div className="space-y-2">
+          {offers.map((o: any) => (
+            <Card key={o.id} className="border-primary/40 bg-[image:var(--gradient-primary)]/[0.06]">
+              <CardContent className="flex flex-wrap items-center gap-3 py-4">
+                <Tag className="h-5 w-5 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold">{o.title}</span>
+                    {o.discount_percent > 0 && (
+                      <Badge className="bg-primary text-primary-foreground">{o.discount_percent}% OFF</Badge>
+                    )}
+                    {o.code && <Badge variant="outline" className="font-mono">{o.code}</Badge>}
+                  </div>
+                  {o.description && <p className="mt-1 text-xs text-muted-foreground">{o.description}</p>}
+                </div>
+                {o.valid_until && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {new Date(o.valid_until).toLocaleDateString()}
+                  </span>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         {(["free", "pro", "business"] as const).map((id) => {
