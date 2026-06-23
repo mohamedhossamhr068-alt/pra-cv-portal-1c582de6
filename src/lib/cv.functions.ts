@@ -20,6 +20,11 @@ const CvOutputSchema = z.object({
   recommendations: z.array(z.string()),
 });
 
+const LanguageSchema = z.object({
+  name: z.string().min(1).max(40),
+  level: z.string().min(1).max(30),
+});
+
 const CvInputSchema = z.object({
   fullName: z.string().min(1).max(120),
   jobTitle: z.string().min(1).max(120),
@@ -33,6 +38,14 @@ const CvInputSchema = z.object({
   email: z.string().max(160).optional(),
   phone: z.string().max(40).optional(),
   location: z.string().max(120).optional(),
+  englishLevel: z.enum(["none", "basic", "intermediate", "advanced", "fluent", "native"]).optional(),
+  languages: z.array(LanguageSchema).max(8).optional(),
+  erp: z.string().max(120).optional(),
+  yearsExperience: z.coerce.number().min(0).max(60).optional(),
+  education: z.string().max(400).optional(),
+  certifications: z.string().max(600).optional(),
+  linkedinUrl: z.string().max(200).optional(),
+  portfolioUrl: z.string().max(200).optional(),
 });
 
 type CvInput = z.infer<typeof CvInputSchema>;
@@ -259,6 +272,14 @@ export const generateCv = createServerFn({ method: "POST" })
 Target role: ${data.jobTitle}
 Industry: ${data.industry}
 Seniority: ${data.seniority}
+Years of experience: ${data.yearsExperience ?? "not provided"}
+English level: ${data.englishLevel ?? "not provided"}
+Other languages: ${(data.languages ?? []).map((l) => `${l.name} (${l.level})`).join(", ") || "not provided"}
+ERP / Systems: ${data.erp || "not provided"}
+Education: ${data.education || "not provided"}
+Certifications: ${data.certifications || "not provided"}
+LinkedIn: ${data.linkedinUrl || "not provided"}
+Portfolio: ${data.portfolioUrl || "not provided"}
 Skills (raw): ${data.skills}
 Experience (raw): ${data.experience}
 
@@ -270,7 +291,8 @@ Produce an ATS-optimized CV with exactly these JSON keys:
   "achievements": ["string"],
   "skillsMatrix": [{ "category": "string", "skills": ["string"] }],
   "recommendations": ["string"]
-}`,
+}
+If languages or ERP systems were provided, include them as their own skillsMatrix categories ("Languages", "ERP & Systems"). Do not invent numbers; reflect the candidate's English level and ERP exposure faithfully.`,
       });
       cvOutput = normalizeCvOutput(extractJsonObject(result.text), data);
       CvOutputSchema.parse(cvOutput);
@@ -366,14 +388,16 @@ export const updateCvStyle = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         template: z.string().min(1).max(60).optional(),
         accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        print_locale: z.enum(["ar", "en"]).optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const patch: { template?: string; accent_color?: string } = {};
+    const patch: { template?: string; accent_color?: string; print_locale?: string } = {};
     if (data.template) patch.template = data.template;
     if (data.accent_color) patch.accent_color = data.accent_color;
+    if (data.print_locale) patch.print_locale = data.print_locale;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabase
       .from("cv_logs")
