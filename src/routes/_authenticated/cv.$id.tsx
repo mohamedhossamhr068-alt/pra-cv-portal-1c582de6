@@ -926,15 +926,7 @@ function CvTemplate({
           </div>
         </Section>
 
-        {output.recommendations.length > 0 && (
-          <Section icon={<Sparkles className="h-4 w-4" />} title={t("cv.recommendations")} accent={accent}>
-            <div className="rounded-lg border-l-4 p-4" style={{ borderColor: accent, background: `${accent}08` }}>
-              <ul className="ms-4 list-disc space-y-1.5 text-neutral-700">
-                {output.recommendations.map((r, i) => (<li key={i}>{r}</li>))}
-              </ul>
-            </div>
-          </Section>
-        )}
+        {/* Career recommendations are rendered in the in-app analysis panel, not in the CV. */}
       </div>
     </div>
   );
