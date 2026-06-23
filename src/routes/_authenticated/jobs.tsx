@@ -199,7 +199,7 @@ function JobCard({ job, score, reasoning, t }: { job: any; score?: number; reaso
         {job.external_url && (
           <a href={job.external_url} target="_blank" rel="noreferrer" className="block">
             <Button variant="outline" size="sm" className="w-full gap-2">
-              قدّم على المنصة <ExternalLink className="h-3 w-3" />
+              {t("jobs.apply")} <ExternalLink className="h-3 w-3" />
             </Button>
           </a>
         )}
