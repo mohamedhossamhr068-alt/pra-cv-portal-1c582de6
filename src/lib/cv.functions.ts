@@ -69,6 +69,7 @@ export const generateCv = createServerFn({ method: "POST" })
       result = await generateObject({
         model: gateway("google/gemini-3-flash-preview"),
         schema: CvOutputSchema,
+        maxOutputTokens: 8192,
         system: `You are a senior HR writer producing ATS-optimized CVs. Strict rules:
 - Do NOT invent companies, dates, titles, or achievements the candidate did not provide.
 - Rewrite, structure, and quantify only what is implied by the user's inputs.
