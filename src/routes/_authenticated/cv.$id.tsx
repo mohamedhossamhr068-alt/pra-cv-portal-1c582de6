@@ -99,7 +99,10 @@ function CvViewer() {
 
   if (isLoading || !data || !out) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
 
-  const analysis = (data as any).analysis as CvAnalysis | null;
+  const baseAnalysis = (data as any).analysis as CvAnalysis | null;
+  const analysis = translated?.analysis ?? baseAnalysis;
+  const cvLang: "ar" | "en" = translatedLang ?? ((input?.locale === "ar") ? "ar" : "en");
+  const cvDir: "rtl" | "ltr" = cvLang === "ar" ? "rtl" : "ltr";
   const tpl = selectedTemplate ?? (data.template as string);
   const accent = selectedAccent ?? (data as any).accent_color ?? tenant?.primary_color ?? "#4f46e5";
 
