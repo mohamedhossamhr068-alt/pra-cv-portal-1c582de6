@@ -221,6 +221,31 @@ export const generateCv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CvInputSchema.parse(data))
   .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    try {
+      const result = await generateCvInner({ data, context });
+      await supabase.rpc("log_audit" as any, {
+        _action: "cv.generated",
+        _status: "success",
+        _target: data.fullName + " — " + data.jobTitle,
+        _link: `/cv/${result.id}`,
+        _metadata: { template: data.template, locale: data.locale, cv_id: result.id } as any,
+      });
+      return result;
+    } catch (e: any) {
+      await supabase.rpc("log_audit" as any, {
+        _action: "cv.generated",
+        _status: "failure",
+        _target: data.fullName + " — " + data.jobTitle,
+        _link: null,
+        _metadata: { error: String(e?.message ?? e), template: data.template } as any,
+      });
+      throw e;
+    }
+  });
+
+async function generateCvInner({ data, context }: { data: CvInput; context: any }) {
+
     const { supabase, userId } = context;
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI gateway is not configured.");
@@ -350,7 +375,8 @@ If languages or ERP systems were provided, include them as their own skillsMatri
     });
 
     return { id: inserted.id, output: cvOutput, analysis, creditsLeft: credits - CV_CREDIT_COST };
-  });
+}
+
 
 
 export const listCvs = createServerFn({ method: "GET" })
