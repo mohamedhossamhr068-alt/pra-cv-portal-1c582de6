@@ -80,24 +80,29 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname, me.isLoading, me.data, _isAdmin, _isSuper, navigate]);
 
 
-  const items: NavItem[] = [
-    { to: "/dashboard", key: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
-    { to: "/cv/new", key: "cvnew", label: t("nav.cv"), icon: Sparkles },
-    { to: "/cv", key: "cv", label: t("nav.library"), icon: FileText },
-    { to: "/jobs", key: "jobs", label: t("nav.jobs"), icon: Briefcase },
-    { to: "/billing", key: "billing", label: t("nav.billing"), icon: CreditCard },
-    { to: "/billing/topup", key: "topup", label: i18n.language === "ar" ? "شحن رصيد" : "Top up", icon: CreditCard },
-    { to: "/settings", key: "settings", label: t("nav.settings"), icon: SettingsIcon },
-    { to: "/chat/support", key: "chat-support", label: i18n.language === "ar" ? "الدعم" : "Support", icon: MessageCircle },
-  ];
-
+  const flags = (me.data?.profile as any)?.feature_flags as Record<string, boolean> | undefined;
   const isAdmin = me.data?.roles?.includes("company_admin");
   const isSuper = me.data?.roles?.includes("superadmin");
   const isMod = me.data?.roles?.includes("moderator");
+  const privileged = !!(isAdmin || isSuper || isMod);
+  const allow = (k: FeatureFlag) => privileged || hasFeature(flags, k);
+
+  const rawItems: (NavItem & { flag?: FeatureFlag })[] = [
+    { to: "/dashboard", key: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { to: "/cv/new", key: "cvnew", label: t("nav.cv"), icon: Sparkles, flag: "cv_builder" },
+    { to: "/cv", key: "cv", label: t("nav.library"), icon: FileText, flag: "cv_library" },
+    { to: "/jobs", key: "jobs", label: t("nav.jobs"), icon: Briefcase, flag: "jobs" },
+    { to: "/billing", key: "billing", label: t("nav.billing"), icon: CreditCard, flag: "billing" },
+    { to: "/billing/topup", key: "topup", label: i18n.language === "ar" ? "شحن رصيد" : "Top up", icon: CreditCard, flag: "topup" },
+    { to: "/settings", key: "settings", label: t("nav.settings"), icon: SettingsIcon, flag: "settings" },
+    { to: "/chat/support", key: "chat-support", label: i18n.language === "ar" ? "الدعم" : "Support", icon: MessageCircle, flag: "chat_support" },
+  ];
+  const items: NavItem[] = rawItems.filter((it) => !it.flag || allow(it.flag));
 
   if (isMod && !isAdmin) {
     items.push({ to: "/chat/credit", key: "chat-credit", label: i18n.language === "ar" ? "طلبات الكرديت" : "Credit requests", icon: Coins });
   }
+
 
   const adminItems: NavItem[] = [
     { to: "/admin/users", key: "users", label: t("admin.tileUsers"), icon: Users },
