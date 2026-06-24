@@ -148,6 +148,21 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
 
   return (
     <Card className="flex h-[70vh] flex-col overflow-hidden">
+      {showBotToggle && (
+        <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-4 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Bot className="h-4 w-4 text-primary" />
+            <span className="font-medium">{ar ? "البوت الذكي" : "AI bot"}</span>
+            <span className="text-xs text-muted-foreground">
+              {botOn ? (ar ? "يرد تلقائياً حتى يتدخل المشرف" : "Auto-replies until staff steps in") : (ar ? "متوقف" : "Off")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="bot-toggle" className="text-xs">{ar ? "تفعيل" : "Enable"}</Label>
+            <Switch id="bot-toggle" checked={botOn} onCheckedChange={onToggleBot} />
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/30">
         {q.isLoading && <div className="text-sm text-muted-foreground">{ar ? "جار التحميل…" : "Loading…"}</div>}
         {q.data?.length === 0 && (
@@ -158,6 +173,7 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
         {q.data?.map((m: any) => {
           const mine = m.sender_id === meId;
           const isSystem = m.kind === "system";
+          const isBot = m.kind === "bot";
           if (isSystem) {
             return (
               <div key={m.id} className="text-center">
