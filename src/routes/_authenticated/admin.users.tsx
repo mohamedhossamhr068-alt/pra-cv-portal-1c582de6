@@ -227,6 +227,7 @@ function RoleDialog({ open, onOpenChange, user, t }: {
   const [selected, setSelected] = useState<Set<Permission>>(new Set(initialPerms));
   const [unlimited, setUnlimited] = useState<boolean>(user.grant_budget == null);
   const [budget, setBudgetVal] = useState<number>(user.grant_budget ?? 0);
+  const [period, setPeriod] = useState<"monthly" | "total">((user.grant_period as any) ?? "monthly");
   const [resetUsed, setResetUsed] = useState<boolean>(false);
 
   const toggle = (p: Permission) => {
