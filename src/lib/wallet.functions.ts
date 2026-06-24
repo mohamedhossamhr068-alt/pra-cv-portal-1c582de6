@@ -213,16 +213,17 @@ export const createTopupRequestV2 = createServerFn({ method: "POST" })
     const { data: prof } = await supabase
       .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
     if (!prof?.tenant_id) throw new Error("NO_TENANT");
-    const [{ data: w }, { data: tenant }] = await Promise.all([
+    const [{ data: w }, { data: platform }] = await Promise.all([
       supabase.from("wallet_settings").select("credits_per_egp").eq("tenant_id", prof.tenant_id).maybeSingle(),
-      supabase.from("tenants").select("plan_credits_pro,plan_credits_business").eq("id", prof.tenant_id).maybeSingle(),
+      supabase.from("platform_pricing").select("plan_credits_pro,plan_credits_business").eq("id", "global").maybeSingle(),
     ]);
     const rate = Number((w as any)?.credits_per_egp ?? 0.02);
     const credits = data.requested_plan === "pro"
-      ? Math.max(1, Number((tenant as any)?.plan_credits_pro ?? Math.floor(data.amount_egp * rate)))
+      ? Math.max(1, Number((platform as any)?.plan_credits_pro ?? Math.floor(data.amount_egp * rate)))
       : data.requested_plan === "business"
-        ? Math.max(1, Number((tenant as any)?.plan_credits_business ?? Math.floor(data.amount_egp * rate)))
+        ? Math.max(1, Number((platform as any)?.plan_credits_business ?? Math.floor(data.amount_egp * rate)))
         : Math.max(1, Math.floor(data.amount_egp * rate));
+
     const { error } = await supabase.from("topup_requests").insert({
       tenant_id: prof.tenant_id,
       user_id: userId,
