@@ -129,12 +129,13 @@ function StatCard({ icon: Icon, label, value, accent }: any) {
   );
 }
 
-function UserRow({ user, onUpdate, pending, t }: { user: any; onUpdate: (p: any) => void; pending: boolean; t: any }) {
+function UserRow({ user, meId, onUpdate, pending, t }: { user: any; meId?: string; onUpdate: (p: any) => void; pending: boolean; t: any }) {
   const [credits, setCredits] = useState<number>(user.credits ?? 0);
   const [permOpen, setPermOpen] = useState(false);
   const isAdmin = user.roles?.includes("company_admin");
   const isModerator = user.roles?.includes("moderator");
   const permCount = (user.permissions ?? []).length;
+  const isSelf = !!meId && meId === user.id;
 
   return (
     <Card className="overflow-hidden border-border/60 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--shadow-elegant)]">
