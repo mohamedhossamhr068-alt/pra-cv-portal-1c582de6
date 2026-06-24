@@ -296,7 +296,9 @@ function AuthPage() {
                     {t("auth.awaitingApproval")}
                   </p>
                 </form>
+                </>
               ) : (
+
                 <form className="flex flex-col gap-3" onSubmit={verifyCode} noValidate>
                   <div className="grid gap-1.5">
                     <Label htmlFor="code">{t("auth.enterCode")}</Label>
