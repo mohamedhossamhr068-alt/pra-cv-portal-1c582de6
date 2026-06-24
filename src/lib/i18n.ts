@@ -64,6 +64,18 @@ const en = {
     awaitingApproval: "Your account is awaiting admin approval. You'll be notified once it's activated.",
     pendingTitle: "Pending admin approval",
     pendingMsg: "Thanks for signing up. An admin has been notified and will activate your account shortly.",
+    errEmailRequired: "Email is required.",
+    errEmailInvalid: "Enter a valid email address (e.g. you@company.com).",
+    errEmailTooLong: "Email must be 255 characters or fewer.",
+    errCodeRequired: "Enter the 6-digit code we sent to your email.",
+    errCodeShort: "The code must be 6 digits.",
+    errCodeDigits: "The code must contain digits only.",
+    errCodeInvalid: "The code is incorrect or has expired. Request a new one.",
+    errRate: "Too many attempts. Please wait a moment and try again.",
+    errNetwork: "Network error. Check your connection and try again.",
+    statusSending: "Sending the verification code to your email…",
+    statusVerifying: "Verifying your code…",
+
   },
   dashboard: {
     title: "Organization overview",
