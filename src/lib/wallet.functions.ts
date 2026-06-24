@@ -143,12 +143,15 @@ export const listPaymentMethods = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: prof } = await supabase
       .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
-    if (!prof?.tenant_id) return [];
-    const { data } = await supabase
+    const tenantId = prof?.tenant_id ?? null;
+    // Include tenant-specific methods + platform-wide (tenant_id IS NULL) methods
+    const query = supabase
       .from("payment_methods" as any).select("*")
-      .eq("tenant_id", prof.tenant_id)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
+    const { data } = tenantId
+      ? await query.or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
+      : await query.is("tenant_id", null);
     return (data as any[]) ?? [];
   });
 
