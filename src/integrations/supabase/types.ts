@@ -737,10 +737,12 @@ export type Database = {
           admin_note: string | null
           amount_egp: number
           created_at: string
+          credits_granted: number | null
           credits_requested: number
           id: string
           payment_method_id: string | null
           reference_number: string | null
+          requested_plan: Database["public"]["Enums"]["plan_tier"] | null
           reviewed_at: string | null
           reviewed_by: string | null
           screenshot_path: string
@@ -752,10 +754,12 @@ export type Database = {
           admin_note?: string | null
           amount_egp: number
           created_at?: string
+          credits_granted?: number | null
           credits_requested: number
           id?: string
           payment_method_id?: string | null
           reference_number?: string | null
+          requested_plan?: Database["public"]["Enums"]["plan_tier"] | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           screenshot_path: string
@@ -767,10 +771,12 @@ export type Database = {
           admin_note?: string | null
           amount_egp?: number
           created_at?: string
+          credits_granted?: number | null
           credits_requested?: number
           id?: string
           payment_method_id?: string | null
           reference_number?: string | null
+          requested_plan?: Database["public"]["Enums"]["plan_tier"] | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           screenshot_path?: string
