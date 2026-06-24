@@ -305,16 +305,23 @@ function RoleDialog({ open, onOpenChange, user, isSelf, t }: {
           <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {t("admin.roleLabel")}
           </div>
+          {isSelf && wasAdmin && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-300">
+              {t("admin.selfDemoteForbidden")}
+            </div>
+          )}
           {roleOptions.map(({ id, icon: Icon }) => {
             const active = role === id;
+            const lockedSelf = isSelf && wasAdmin && id !== "admin";
             return (
               <button
                 type="button"
                 key={id}
-                onClick={() => setRole(id)}
+                onClick={() => !lockedSelf && setRole(id)}
+                disabled={lockedSelf}
                 className={`flex w-full items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
                   active ? "border-primary bg-primary/5" : "hover:bg-muted/30"
-                }`}
+                } ${lockedSelf ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 <div className={`grid h-9 w-9 place-items-center rounded-lg ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                   <Icon className="h-4 w-4" />
