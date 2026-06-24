@@ -33,7 +33,8 @@ function formatPrice(amount: number, currency: string) {
 }
 
 function Pricing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   const getPricing = useServerFn(getPlatformPricing);
   const { data: pricing } = useQuery({
     queryKey: ["platform-pricing"],
@@ -44,21 +45,56 @@ function Pricing() {
     refetchInterval: 5_000,
   });
   const currency = pricing?.currency ?? "USD";
+  const bonus = Number((pricing as any)?.bonus_credits ?? 3);
   const tiers = [
-    { id: "free" as const, price: Number(pricing?.plan_price_free ?? 0), popular: false },
-    { id: "pro" as const, price: Number(pricing?.plan_price_pro ?? 29), popular: true },
-    { id: "business" as const, price: Number(pricing?.plan_price_business ?? 99), popular: false },
+    {
+      id: "free" as const,
+      price: Number(pricing?.plan_price_free ?? 0),
+      credits: Number((pricing as any)?.plan_credits_free ?? 10),
+      popular: false,
+      features: ar
+        ? ["مستخدم واحد", "قوالب أساسية", "إنشاء سيرة ذاتية بالذكاء الاصطناعي"]
+        : ["1 user", "Basic templates", "AI-generated CV"],
+    },
+    {
+      id: "pro" as const,
+      price: Number(pricing?.plan_price_pro ?? 29),
+      credits: Number((pricing as any)?.plan_credits_pro ?? 100),
+      popular: true,
+      features: ar
+        ? ["كل القوالب", "مطابقة الوظائف", "أولوية في الذكاء الاصطناعي", "تصدير PDF"]
+        : ["All templates", "Job matching", "Priority AI", "PDF export"],
+    },
+    {
+      id: "business" as const,
+      price: Number(pricing?.plan_price_business ?? 99),
+      credits: Number((pricing as any)?.plan_credits_business ?? 500),
+      popular: false,
+      features: ar
+        ? ["مساحة عمل للفريق", "هوية بصرية مخصصة", "تحليلات وتصدير", "دعم ذو أولوية"]
+        : ["Team workspace", "Custom branding", "Analytics & exports", "Priority support"],
+    },
   ];
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">Pricing</h1>
-          <p className="mt-3 text-muted-foreground">Scale from solo to enterprise.</p>
+          <h1 className="text-4xl font-bold tracking-tight">{ar ? "الأسعار" : "Pricing"}</h1>
+          <p className="mt-3 text-muted-foreground">
+            {ar ? "اختر الباقة المناسبة لفريقك." : "Scale from solo to enterprise."}
+          </p>
+          {bonus > 0 && (
+            <p className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              {ar ? `🎁 +${bonus} كريديت إضافي مع كل باقة` : `🎁 +${bonus} bonus credits with every package`}
+            </p>
+          )}
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {tiers.map((tier) => {
-            const features = (t(`billing.features.${tier.id}`, { returnObjects: true }) as string[]) ?? [];
+            const creditsLine = ar
+              ? `${tier.credits.toLocaleString("ar-EG")} كريديت / شهر`
+              : `${tier.credits.toLocaleString("en-US")} credits / month`;
+            const allFeatures = [creditsLine, ...tier.features];
             return (
               <Card
                 key={tier.id}
@@ -69,7 +105,7 @@ function Pricing() {
                     {t(`billing.plans.${tier.id}`)}
                     {tier.popular && (
                       <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                        POPULAR
+                        {ar ? "الأكثر شهرة" : "POPULAR"}
                       </span>
                     )}
                   </CardTitle>
@@ -80,16 +116,22 @@ function Pricing() {
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   <ul className="space-y-2 text-sm">
-                    {features.map((f) => (
+                    {allFeatures.map((f) => (
                       <li key={f} className="flex items-start gap-2">
                         <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
                         <span>{f}</span>
                       </li>
                     ))}
+                    {bonus > 0 && (
+                      <li className="flex items-start gap-2 font-semibold text-primary">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{ar ? `+${bonus} كريديت إضافي مجاناً` : `+${bonus} bonus credits free`}</span>
+                      </li>
+                    )}
                   </ul>
                   <Link to="/auth">
                     <Button className="w-full" variant={tier.popular ? "default" : "outline"}>
-                      Get started
+                      {ar ? "ابدأ الآن" : "Get started"}
                     </Button>
                   </Link>
                 </CardContent>
@@ -102,3 +144,4 @@ function Pricing() {
     </div>
   );
 }
+
