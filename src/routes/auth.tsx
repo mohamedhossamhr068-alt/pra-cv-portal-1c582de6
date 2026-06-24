@@ -45,8 +45,10 @@ function mapAuthError(t: (k: string) => string, msg: string | undefined, kind: "
 function AuthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"email" | "phone">("email");
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [code, setCode] = useState("");
@@ -62,6 +64,12 @@ function AuthPage() {
     .max(255, t("auth.errEmailTooLong"))
     .email(t("auth.errEmailInvalid"));
 
+  const phoneSchema = z
+    .string()
+    .trim()
+    .min(1, "رقم الهاتف مطلوب")
+    .regex(/^\+?[1-9]\d{7,14}$/, "رقم هاتف غير صالح (مثال: ‎+201001234567)");
+
   const codeSchema = z
     .string()
     .trim()
@@ -72,24 +80,46 @@ function AuthPage() {
   const sendCode = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setEmailError(null);
-    const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) {
-      setEmailError(parsed.error.issues[0]?.message ?? t("auth.errEmailInvalid"));
-      return;
-    }
     setLoading(true);
     setStatus(t("auth.statusSending"));
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: parsed.data,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: window.location.origin + "/pending-approval",
-          data: { full_name: fullName || undefined, company_name: company || undefined },
-        },
-      });
-      if (error) throw error;
-      toast.success(t("auth.codeSent", { email: parsed.data }));
+      if (mode === "email") {
+        const parsed = emailSchema.safeParse(email);
+        if (!parsed.success) {
+          setEmailError(parsed.error.issues[0]?.message ?? t("auth.errEmailInvalid"));
+          setLoading(false);
+          setStatus(null);
+          return;
+        }
+        const { error } = await supabase.auth.signInWithOtp({
+          email: parsed.data,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: window.location.origin + "/pending-approval",
+            data: { full_name: fullName || undefined, company_name: company || undefined },
+          },
+        });
+        if (error) throw error;
+        toast.success(t("auth.codeSent", { email: parsed.data }));
+      } else {
+        const parsed = phoneSchema.safeParse(phone);
+        if (!parsed.success) {
+          setEmailError(parsed.error.issues[0]?.message ?? "رقم هاتف غير صالح");
+          setLoading(false);
+          setStatus(null);
+          return;
+        }
+        const { error } = await supabase.auth.signInWithOtp({
+          phone: parsed.data,
+          options: {
+            shouldCreateUser: true,
+            channel: "sms",
+            data: { full_name: fullName || undefined, company_name: company || undefined },
+          },
+        });
+        if (error) throw error;
+        toast.success(`تم إرسال الكود إلى ${parsed.data}`);
+      }
       setStep("code");
       setCode("");
       setCodeError(null);
@@ -114,11 +144,9 @@ function AuthPage() {
     setLoading(true);
     setStatus(t("auth.statusVerifying"));
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: parsed.data,
-        type: "email",
-      });
+      const { error } = mode === "email"
+        ? await supabase.auth.verifyOtp({ email: email.trim(), token: parsed.data, type: "email" })
+        : await supabase.auth.verifyOtp({ phone: phone.trim(), token: parsed.data, type: "sms" });
       if (error) throw error;
       navigate({ to: "/dashboard" });
     } catch (err: any) {
@@ -130,6 +158,8 @@ function AuthPage() {
       setStatus(null);
     }
   };
+
+
 
 
   return (
