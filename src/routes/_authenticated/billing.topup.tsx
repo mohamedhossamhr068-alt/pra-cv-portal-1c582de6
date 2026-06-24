@@ -279,7 +279,7 @@ function TopupPage() {
             <Coins className="me-2 inline h-4 w-4 text-amber-500" />
             {T("ستحصل على", "You will receive")}{" "}
             <b>{expectedCredits}</b>{" "}{T("كريديت", "credits")}
-            <span className="text-muted-foreground"> · {selectedPlan ? planOptions[selectedPlan].label : `${rate} ${T("لكل جنيه", "per EGP")}`}</span>
+            <span className="text-muted-foreground"> · {selectedPlan ? planOptions[selectedPlan].label : T(`1 كريديت = ${Math.round(1 / (rate || 0.02))} ج.م`, `1 credit = ${Math.round(1 / (rate || 0.02))} EGP`)}</span>
           </div>
 
           <div>
