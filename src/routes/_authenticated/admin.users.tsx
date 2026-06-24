@@ -163,20 +163,8 @@ function UserRow({ user, onUpdate, pending, t }: { user: any; onUpdate: (p: any)
           variant="outline"
           onClick={() => setPermOpen(true)}
           className="gap-1.5"
-          disabled={isAdmin}
         >
-          <KeyRound className="h-3.5 w-3.5" /> {t("admin.permissions")}
-        </Button>
-
-        <Button
-          size="sm"
-          variant={isAdmin ? "outline" : "secondary"}
-          disabled={pending}
-          onClick={() => onUpdate({ grant_admin: !isAdmin })}
-          className="gap-1.5"
-        >
-          {isAdmin ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
-          {isAdmin ? t("admin.demote") : t("admin.promote")}
+          <KeyRound className="h-3.5 w-3.5" /> {t("admin.manageRole")}
         </Button>
 
         <Button
@@ -190,7 +178,7 @@ function UserRow({ user, onUpdate, pending, t }: { user: any; onUpdate: (p: any)
           {user.is_blocked ? t("admin.unblock") : t("admin.block")}
         </Button>
 
-        <PermissionsDialog
+        <RoleDialog
           open={permOpen}
           onOpenChange={setPermOpen}
           user={user}
@@ -200,6 +188,142 @@ function UserRow({ user, onUpdate, pending, t }: { user: any; onUpdate: (p: any)
     </Card>
   );
 }
+
+type RoleKind = "user" | "moderator" | "admin";
+
+function RoleDialog({ open, onOpenChange, user, t }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  user: any;
+  t: any;
+}) {
+  const qc = useQueryClient();
+  const setPerms = useServerFn(setUserPermissions);
+  const updateUser = useServerFn(adminUpdateUser);
+  const initialPerms = (user.permissions ?? []) as Permission[];
+  const wasAdmin = user.roles?.includes("company_admin");
+  const wasModerator = user.roles?.includes("moderator");
+  const initialRole: RoleKind = wasAdmin ? "admin" : wasModerator ? "moderator" : "user";
+
+  const [role, setRole] = useState<RoleKind>(initialRole);
+  const [selected, setSelected] = useState<Set<Permission>>(new Set(initialPerms));
+
+  const toggle = (p: Permission) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+  };
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      // 1) Admin role transitions (only true admins may toggle this).
+      if (role === "admin" && !wasAdmin) {
+        await updateUser({ data: { target_user: user.id, grant_admin: true } });
+      } else if (role !== "admin" && wasAdmin) {
+        await updateUser({ data: { target_user: user.id, grant_admin: false } });
+      }
+      // 2) Moderator role + permissions.
+      const perms: Permission[] = role === "moderator" ? Array.from(selected) : [];
+      const makeMod = role === "moderator" ? true : role === "user" ? false : null;
+      await setPerms({
+        data: {
+          target_user: user.id,
+          permissions: perms,
+          ...(makeMod !== null ? { make_moderator: makeMod } : {}),
+        },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tenant-users"] });
+      toast.success(t("admin.roleSaved"));
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e?.message ?? t("admin.updateFailed")),
+  });
+
+  const roleOptions: { id: RoleKind; icon: any }[] = [
+    { id: "user", icon: Users },
+    { id: "moderator", icon: KeyRound },
+    { id: "admin", icon: Shield },
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            {t("admin.permissionsFor", { name: user.full_name ?? user.email })}
+          </DialogTitle>
+          <DialogDescription>{t("admin.permissionsHint")}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t("admin.roleLabel")}
+          </div>
+          {roleOptions.map(({ id, icon: Icon }) => {
+            const active = role === id;
+            return (
+              <button
+                type="button"
+                key={id}
+                onClick={() => setRole(id)}
+                className={`flex w-full items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
+                  active ? "border-primary bg-primary/5" : "hover:bg-muted/30"
+                }`}
+              >
+                <div className={`grid h-9 w-9 place-items-center rounded-lg ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{t(`admin.role${id.charAt(0).toUpperCase() + id.slice(1)}`)}</div>
+                  <div className="text-xs text-muted-foreground">{t(`admin.role${id.charAt(0).toUpperCase() + id.slice(1)}_desc`)}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {role === "moderator" && (
+          <div className="space-y-2">
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {t("admin.permissions")}
+            </div>
+            {ALL_PERMISSIONS.map((p) => (
+              <label
+                key={p}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/30"
+              >
+                <Checkbox checked={selected.has(p)} onCheckedChange={() => toggle(p)} className="mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{t(`admin.perm_${p}`)}</div>
+                  <div className="text-xs text-muted-foreground">{t(`admin.perm_${p}_desc`)}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mut.isPending}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>
+            {mut.isPending ? t("admin.saving") : t("admin.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Legacy export retained for backward compatibility — unused.
+function _LegacyPermissionsDialog(_: any) { return null; }
+
 
 function PermissionsDialog({ open, onOpenChange, user, t }: {
   open: boolean;
