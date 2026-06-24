@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { getTenantPricing } from "@/lib/admin.functions";
+import { getPlatformPricing } from "@/lib/admin.functions";
 import {
   createTopupRequestV2,
   listMyTopups,
@@ -39,14 +39,14 @@ function TopupPage() {
   const me = useMeQuery();
   const qc = useQueryClient();
   const walletFn = useServerFn(getWalletSettings);
-  const pricingFn = useServerFn(getTenantPricing);
+  const pricingFn = useServerFn(getPlatformPricing);
   const createFn = useServerFn(createTopupRequestV2);
   const listFn = useServerFn(listMyTopups);
   const methodsFn = useServerFn(listPaymentMethods);
   const urlFn = useServerFn(getScreenshotUrl);
 
   const { data: wallet } = useQuery({ queryKey: ["wallet"], queryFn: () => walletFn() });
-  const { data: pricing } = useQuery({ queryKey: ["tenant-pricing"], queryFn: () => pricingFn() });
+  const { data: pricing } = useQuery({ queryKey: ["platform-pricing"], queryFn: () => pricingFn() });
   const { data: history } = useQuery({ queryKey: ["my-topups"], queryFn: () => listFn() });
   const { data: methods } = useQuery({ queryKey: ["payment-methods"], queryFn: () => methodsFn() });
 
