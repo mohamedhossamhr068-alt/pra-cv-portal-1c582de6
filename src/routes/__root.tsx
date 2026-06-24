@@ -15,6 +15,9 @@ import { FloatingChatWidget } from "@/components/floating-chat-widget";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
+const THEME_COLOR = "#3b82f6";
+
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
