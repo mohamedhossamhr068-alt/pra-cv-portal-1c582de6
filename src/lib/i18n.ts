@@ -142,6 +142,10 @@ const en = {
     today: "today",
     daysAgo: "{{n}}d ago",
     allEgyptHint: 'All recent Egypt jobs. Create a CV and click "Match" to see your fit score for each one.',
+    searchHint: "Search jobs by title (e.g. React Developer, Sales Manager)…",
+    searchBtn: "Search",
+    searching: "Searching…",
+    searchResultsFor: 'Results for "{{kw}}" — {{n}} job(s).',
   },
   billing: {
     title: "Billing & subscription",
