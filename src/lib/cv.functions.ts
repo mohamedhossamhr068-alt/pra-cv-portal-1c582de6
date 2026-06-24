@@ -452,8 +452,11 @@ export const deleteCv = createServerFn({ method: "POST" })
       return { ok: true };
     }
     // admin path — use service role after authorization
-    const { data: isAdmin } = await supabase.rpc("is_tenant_admin", { _user_id: userId, _tenant_id: cv.tenant_id });
+    const { data: isAdmin } = cv.tenant_id
+      ? await supabase.rpc("is_tenant_admin", { _user_id: userId, _tenant_id: cv.tenant_id })
+      : { data: false };
     const { data: isSuper } = await supabase.rpc("is_superadmin", { _user_id: userId });
+
     if (!isAdmin && !isSuper) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("cv_logs").delete().eq("id", data.id);
