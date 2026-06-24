@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Shield, ShieldOff, Ban, Check, Coins, Users, Search, Crown, KeyRound } from "lucide-react";
+import { Shield, Ban, Check, Coins, Users, Search, Crown, KeyRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
