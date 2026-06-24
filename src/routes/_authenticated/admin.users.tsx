@@ -261,6 +261,7 @@ function RoleDialog({ open, onOpenChange, user, t }: {
             target_user: user.id,
             budget: unlimited ? null : Math.max(0, Math.floor(budget)),
             reset_used: resetUsed,
+            period,
           },
         });
       }
