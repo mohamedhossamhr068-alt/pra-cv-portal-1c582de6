@@ -273,9 +273,14 @@ function TopupPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>{T("المبلغ بالجنيه", "Amount (EGP)")}</Label>
-              <Input type="number" min={1} value={amount}
+              <Input type="number" min={egpPerCredit} step={egpPerCredit} value={amount}
                 readOnly={!!selectedPlan}
                 onChange={(e) => setAmount(parseFloat(e.target.value || "0"))} />
+              {!selectedPlan && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {T(`الحد الأدنى ${egpPerCredit} ج.م — 1 كريديت = ${egpPerCredit} ج.م`, `Minimum ${egpPerCredit} EGP — 1 credit = ${egpPerCredit} EGP`)}
+                </p>
+              )}
             </div>
             <div>
               <Label>{T("رقم العملية (اختياري)", "Reference # (optional)")}</Label>
