@@ -272,6 +272,8 @@ const en = {
     budgetRemaining: "Grant budget remaining",
     budgetExhausted: "Out of grant budget — ask an admin to top it up.",
     budgetCannotLower: "Moderators cannot reduce a user's credits.",
+    selfDemoteForbidden: "You cannot remove your own admin role. Ask another admin to do it.",
+    lastAdminForbidden: "You cannot remove the last admin in the workspace.",
     tileNotifications: "Admin alerts",
     tileNotificationsDesc: "Moderator activity feed",
   },
