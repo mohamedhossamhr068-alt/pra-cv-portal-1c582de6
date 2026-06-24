@@ -76,8 +76,27 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (isSuperOnly && !_isSuper) { navigate({ to: "/dashboard", replace: true }); return; }
     if (pathname.startsWith("/admin/") && !_isAdmin && !_isSuper) {
       navigate({ to: "/dashboard", replace: true });
+      return;
+    }
+    const _isMod = me.data.roles?.includes("moderator");
+    const _privileged = !!(_isAdmin || _isSuper || _isMod);
+    if (_privileged) return;
+    const _flags = (me.data.profile as any)?.feature_flags as Record<string, boolean> | undefined;
+    if (!_flags) return;
+    const gate = (path: string, key: string) => pathname.startsWith(path) && _flags[key] === false;
+    if (
+      gate("/cv/new", "cv_builder") ||
+      (pathname === "/cv" || pathname.startsWith("/cv/")) && _flags["cv_library"] === false && !pathname.startsWith("/cv/new") ||
+      gate("/jobs", "jobs") ||
+      (pathname === "/billing" && _flags["billing"] === false) ||
+      gate("/billing/topup", "topup") ||
+      gate("/settings", "settings") ||
+      gate("/chat/support", "chat_support")
+    ) {
+      navigate({ to: "/dashboard", replace: true });
     }
   }, [pathname, me.isLoading, me.data, _isAdmin, _isSuper, navigate]);
+
 
 
   const flags = (me.data?.profile as any)?.feature_flags as Record<string, boolean> | undefined;
