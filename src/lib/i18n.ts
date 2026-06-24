@@ -130,10 +130,11 @@ const en = {
       business: "Business",
     },
     features: {
-      free: ["3 CVs / month", "1 user", "Basic templates"],
-      pro: ["50 CVs / month", "All templates", "Job matching", "Priority AI"],
-      business: ["Unlimited CVs", "Team workspace", "Branding", "Analytics & exports"],
+      free: ["10 credits / month", "1 user", "Basic templates"],
+      pro: ["100 credits / month", "All templates", "Job matching", "Priority AI"],
+      business: ["500 credits / month", "Team workspace", "Branding", "Analytics & exports"],
     },
+
     stripeNote: "Stripe checkout is available once payments are enabled on this workspace.",
   },
   settings: {
@@ -349,10 +350,11 @@ const ar: typeof en = {
     upgrade: "ترقية",
     plans: { free: "مجاني", pro: "احترافي", business: "أعمال" },
     features: {
-      free: ["3 سير شهريًا", "مستخدم واحد", "قوالب أساسية"],
-      pro: ["50 سيرة شهريًا", "كل القوالب", "مطابقة وظائف", "AI ذو أولوية"],
-      business: ["سير غير محدودة", "مساحة فريق", "هوية بصرية", "تحليلات وتصدير"],
+      free: ["10 كريديت شهرياً", "مستخدم واحد", "قوالب أساسية"],
+      pro: ["100 كريديت شهرياً", "كل القوالب", "مطابقة وظائف", "AI ذو أولوية"],
+      business: ["500 كريديت شهرياً", "مساحة فريق", "هوية بصرية", "تحليلات وتصدير"],
     },
+
     stripeNote: "ستظهر بوابة Stripe بمجرد تفعيل المدفوعات على هذه المساحة.",
   },
   settings: {

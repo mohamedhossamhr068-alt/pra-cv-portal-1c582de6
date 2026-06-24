@@ -43,16 +43,25 @@ function AdminPricing() {
   const [planFree, setPlanFree] = useState(0);
   const [planPro, setPlanPro] = useState(29);
   const [planBusiness, setPlanBusiness] = useState(99);
+  const [creditsFree, setCreditsFree] = useState(10);
+  const [creditsPro, setCreditsPro] = useState(100);
+  const [creditsBusiness, setCreditsBusiness] = useState(500);
+  const [bonus, setBonus] = useState(3);
 
   useEffect(() => {
     if (data) {
-      setCv((data as any).cv_credit_cost ?? 5);
-      setMatch((data as any).match_credit_cost ?? 1);
-      setScrape((data as any).scrape_credit_cost ?? 3);
-      setCurrency((data as any).currency ?? "USD");
-      setPlanFree(Number((data as any).plan_price_free ?? 0));
-      setPlanPro(Number((data as any).plan_price_pro ?? 29));
-      setPlanBusiness(Number((data as any).plan_price_business ?? 99));
+      const d: any = data;
+      setCv(d.cv_credit_cost ?? 5);
+      setMatch(d.match_credit_cost ?? 1);
+      setScrape(d.scrape_credit_cost ?? 3);
+      setCurrency(d.currency ?? "USD");
+      setPlanFree(Number(d.plan_price_free ?? 0));
+      setPlanPro(Number(d.plan_price_pro ?? 29));
+      setPlanBusiness(Number(d.plan_price_business ?? 99));
+      setCreditsFree(Number(d.plan_credits_free ?? 10));
+      setCreditsPro(Number(d.plan_credits_pro ?? 100));
+      setCreditsBusiness(Number(d.plan_credits_business ?? 500));
+      setBonus(Number(d.bonus_credits ?? 3));
     }
   }, [data]);
 
@@ -69,6 +78,10 @@ function AdminPricing() {
           plan_free: planFree,
           plan_pro: planPro,
           plan_business: planBusiness,
+          credits_free: creditsFree,
+          credits_pro: creditsPro,
+          credits_business: creditsBusiness,
+          bonus_credits: bonus,
         },
       }),
     onSuccess: () => {
@@ -87,10 +100,11 @@ function AdminPricing() {
   ];
 
   const planItems = [
-    { key: "free", label: T("الخطة المجانية", "Free Plan"), value: planFree, set: setPlanFree, badge: T("للبداية", "Starter") },
-    { key: "pro", label: T("خطة Pro", "Pro Plan"), value: planPro, set: setPlanPro, badge: T("الأكثر شهرة", "Popular") },
-    { key: "business", label: T("خطة Business", "Business Plan"), value: planBusiness, set: setPlanBusiness, badge: T("للفرق", "Teams") },
+    { key: "free", label: T("الخطة المجانية", "Free Plan"), value: planFree, set: setPlanFree, credits: creditsFree, setCredits: setCreditsFree, badge: T("للبداية", "Starter") },
+    { key: "pro", label: T("خطة Pro", "Pro Plan"), value: planPro, set: setPlanPro, credits: creditsPro, setCredits: setCreditsPro, badge: T("الأكثر شهرة", "Popular") },
+    { key: "business", label: T("خطة Business", "Business Plan"), value: planBusiness, set: setPlanBusiness, credits: creditsBusiness, setCredits: setCreditsBusiness, badge: T("للفرق", "Teams") },
   ];
+
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -145,12 +159,12 @@ function AdminPricing() {
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {planItems.map((p) => (
-                  <div key={p.key} className="rounded-xl border bg-card p-3">
+                  <div key={p.key} className="rounded-xl border bg-card p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-semibold">{p.label}</Label>
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{p.badge}</span>
                     </div>
-                    <div className="mt-2 flex items-center gap-1">
+                    <div className="flex items-center gap-1">
                       <span className="text-sm font-medium text-muted-foreground">{currencyMeta.symbol}</span>
                       <Input
                         type="number"
@@ -162,11 +176,45 @@ function AdminPricing() {
                       />
                       <span className="text-xs text-muted-foreground whitespace-nowrap">/mo</span>
                     </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">{T("الكريديت الشهري", "Monthly credits")}</Label>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={p.credits}
+                          onChange={(e) => p.setCredits(Math.max(0, parseInt(e.target.value || "0", 10)))}
+                          className="font-semibold"
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{T("كريديت", "credits")}</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
+              <div className="mt-3 flex items-center gap-3 rounded-xl border bg-primary/5 p-3">
+                <div className="rounded-lg bg-primary/15 p-2 text-primary"><Coins className="h-4 w-4" /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold">{T("كريديت إضافي مع كل باقة", "Bonus credits per package")}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {T("يتم إضافته تلقائياً مع أي عملية شحن أو اشتراك.", "Automatically granted on every top-up or subscription.")}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10000}
+                    value={bonus}
+                    onChange={(e) => setBonus(Math.max(0, parseInt(e.target.value || "0", 10)))}
+                    className="w-24 font-bold"
+                  />
+                  <span className="text-xs text-muted-foreground">{T("كريديت", "credits")}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
 
           {/* Credit costs (per action) */}
           <Card className="border-border/60">
