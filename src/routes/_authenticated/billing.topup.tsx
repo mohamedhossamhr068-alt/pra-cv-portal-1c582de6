@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { getTenantPricing } from "@/lib/admin.functions";
+import { getPlatformPricing } from "@/lib/admin.functions";
 import {
   createTopupRequestV2,
   listMyTopups,
