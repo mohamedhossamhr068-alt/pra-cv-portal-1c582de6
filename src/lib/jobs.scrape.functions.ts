@@ -14,10 +14,20 @@ const SOURCES: { host: string; source: string }[] = [
   { host: "naukrigulf.com", source: "naukrigulf" },
 ];
 
+function isSafeHttpUrl(u: string) {
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 function isEgyptUrl(u: string) {
   const s = u.toLowerCase();
   return /(\/eg\/|\/egypt|egypt|cairo|alexandria|giza|wuzzuf\.net)/.test(s);
 }
+
 
 function logoFor(url: string, source: string) {
   try {
@@ -120,7 +130,9 @@ export const scrapeEgyptJobs = createServerFn({ method: "POST" })
         const results = json?.data?.web ?? json?.data ?? [];
         for (const r of results) {
           if (!r?.url || !r?.title) continue;
+          if (!isSafeHttpUrl(String(r.url))) continue;
           if (!isEgyptUrl(String(r.url))) continue; // hard Egypt filter
+
           const desc = String(r.description ?? r.snippet ?? r.markdown ?? "");
           // Drop obvious non-Egypt mentions
           if (/\b(saudi|riyadh|jeddah|dubai|abu dhabi|qatar|kuwait|oman|bahrain|usa|united states|uk|london)\b/i
