@@ -583,6 +583,8 @@ const ar: typeof en = {
     budgetRemaining: "المتبقي من ميزانية المنح",
     budgetExhausted: "انتهت ميزانية المنح — اطلب من الأدمن إعادة شحنها.",
     budgetCannotLower: "لا يمكن للمودوريتر تقليل رصيد مستخدم.",
+    selfDemoteForbidden: "لا يمكنك إزالة صلاحية المالك عن نفسك. اطلب من مالك آخر تنفيذ ذلك.",
+    lastAdminForbidden: "لا يمكن إزالة آخر مالك في مساحة العمل.",
   },
   adminNotif: {
     title: "إشعارات الإدارة",
