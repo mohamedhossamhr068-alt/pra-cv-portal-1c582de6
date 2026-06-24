@@ -87,10 +87,23 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
       await sendFn({ data: { conversation_id: conversationId, body: text.trim() } });
       setText("");
       qc.invalidateQueries({ queryKey: ["chat-messages", conversationId] });
+      if (triggerBot && kind === "support") {
+        botFn({ data: { conversation_id: conversationId } }).catch(() => {});
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {
       setSending(false);
+    }
+  };
+
+  const onToggleBot = async (next: boolean) => {
+    setBotOn(next);
+    try {
+      await toggleBotFn({ data: { conversation_id: conversationId, enabled: next } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+      setBotOn(!next);
     }
   };
 
