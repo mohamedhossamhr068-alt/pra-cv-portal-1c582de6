@@ -9,14 +9,19 @@ export const listActiveOffers = createServerFn({ method: "GET" })
     const { data: prof } = await supabase
       .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
     if (!prof?.tenant_id) return [];
-    const nowIso = new Date().toISOString();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("offers" as any).select("*")
       .eq("tenant_id", prof.tenant_id)
       .eq("is_active", true)
-      .or(`valid_until.is.null,valid_until.gt.${nowIso}`)
       .order("created_at", { ascending: false });
-    return (data as any[]) ?? [];
+    if (error) {
+      console.error("listActiveOffers error", error);
+      return [];
+    }
+    const now = Date.now();
+    return ((data as any[]) ?? []).filter(
+      (o) => !o.valid_until || new Date(o.valid_until).getTime() > now,
+    );
   });
 
 export const listAllOffers = createServerFn({ method: "GET" })
