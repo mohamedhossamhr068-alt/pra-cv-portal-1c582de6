@@ -73,6 +73,30 @@ function extractJsonObject(text: string) {
   return JSON.parse(withoutFence.slice(start, end + 1));
 }
 
+/**
+ * Free Google Gemini fallback when Lovable AI gateway is exhausted (402) or rate-limited (429).
+ * Uses GEMINI_API_KEY — free tier supports 1500 req/day on gemini-2.0-flash.
+ */
+async function callGeminiFallback(system: string, prompt: string): Promise<string> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY not configured");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.6, maxOutputTokens: 8192, responseMimeType: "application/json" },
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini fallback ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join("") ?? "";
+  if (!text) throw new Error("Gemini fallback returned empty response");
+  return text;
+}
+
 function splitSkills(skills: string) {
   return skills
     .split(/[,،\n]/)
