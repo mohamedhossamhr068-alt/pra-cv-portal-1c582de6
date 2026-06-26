@@ -396,15 +396,42 @@ If languages or ERP systems were provided, include them as their own skillsMatri
       CvOutputSchema.parse(cvOutput);
     } catch (e: any) {
       const msg = String(e?.message ?? e);
-      if (msg.includes("429")) {
-        await refund();
-        throw new Error("AI rate limit reached. Please try again shortly.");
+      const isQuota = msg.includes("429") || msg.includes("402") || /rate.?limit|exhaust|insufficient/i.test(msg);
+      if (isQuota && process.env.GEMINI_API_KEY) {
+        // Lovable AI ran out — try free Gemini fallback so users still get their CV.
+        try {
+          const sys = `You are a senior HR writer producing ATS-optimized CVs. ${langInstr}
+Rules: Do NOT invent companies, dates, titles or achievements. Rewrite/quantify only what the user provided. Return ONE valid JSON object only.`;
+          const userPrompt = `Candidate: ${data.fullName}
+Target role: ${data.jobTitle}
+Industry: ${data.industry}
+Seniority: ${data.seniority}
+Years: ${data.yearsExperience ?? "N/A"}
+English: ${data.englishLevel ?? "N/A"}
+Education: ${data.education || "N/A"}
+Certifications: ${data.certifications || "N/A"}
+Skills: ${data.skills}
+Experience: ${data.experience}
+
+Return JSON with keys: summary (string), competencies (string[]), experience ([{role, company, dates, bullets[]}]), achievements (string[]), skillsMatrix ([{category, skills[]}]), recommendations (string[]).`;
+          const text = await callGeminiFallback(sys, userPrompt);
+          cvOutput = normalizeCvOutput(extractJsonObject(text), data);
+          CvOutputSchema.parse(cvOutput);
+        } catch (fallbackErr) {
+          console.error("Gemini fallback also failed:", fallbackErr);
+          cvOutput = normalizeCvOutput(null, data);
+        }
+      } else {
+        if (msg.includes("429")) {
+          await refund();
+          throw new Error("AI rate limit reached. Please try again shortly.");
+        }
+        if (msg.includes("402")) {
+          await refund();
+          throw new Error("AI credits exhausted on this workspace.");
+        }
+        cvOutput = normalizeCvOutput(null, data);
       }
-      if (msg.includes("402")) {
-        await refund();
-        throw new Error("AI credits exhausted on this workspace.");
-      }
-      cvOutput = normalizeCvOutput(null, data);
     }
 
     const analysis = await generateAnalysis(gateway, cvOutput, data);
