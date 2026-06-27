@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { generateText } from "ai";
-import { buildBotSystem, createLovableAiGatewayProvider, fetchBotPricing } from "@/lib/ai-gateway.server";
+import { buildBotSystem, fetchBotPricing } from "@/lib/ai-gateway.server";
+import { geminiGenerateText } from "@/lib/gemini.server";
 
 const Body = z.object({
   guest_token: z.string().min(8).max(80),
