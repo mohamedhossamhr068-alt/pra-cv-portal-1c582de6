@@ -74,11 +74,9 @@ function extractJsonObject(text: string) {
 }
 
 /**
- * Tries the direct Gemini API first (primary provider). If that fails for
- * any reason (e.g. Google Cloud billing/prepay not set up on the project),
- * falls back to OpenRouter — which can itself route to Gemini or another
- * free model — before giving up. This does not change Gemini's role as the
- * primary provider; it only adds a safety net.
+ * Tries OpenRouter first (primary provider). If that fails for any reason
+ * (e.g. missing/invalid OPENROUTER_API_KEY, rate limit), falls back to the
+ * direct Gemini API before giving up.
  */
 async function generateTextWithFallback(opts: {
   system: string;
@@ -87,16 +85,15 @@ async function generateTextWithFallback(opts: {
   maxOutputTokens?: number;
 }): Promise<string> {
   try {
-    return await geminiGenerateText(opts);
-  } catch (geminiErr: any) {
-    console.error("Direct Gemini call failed, trying OpenRouter fallback:", geminiErr?.message);
+    return await openRouterGenerateText(opts);
+  } catch (openRouterErr: any) {
+    console.error("OpenRouter call failed, trying direct Gemini fallback:", openRouterErr?.message);
     try {
-      return await openRouterGenerateText(opts);
-    } catch (openRouterErr: any) {
-      console.error("OpenRouter fallback also failed:", openRouterErr?.message);
-      // Re-throw the original Gemini error so existing error-message checks
-      // (e.g. "429") upstream keep working unchanged.
-      throw geminiErr;
+      return await geminiGenerateText(opts);
+    } catch (geminiErr: any) {
+      console.error("Gemini fallback also failed:", geminiErr?.message);
+      // Re-throw the original OpenRouter error.
+      throw openRouterErr;
     }
   }
 }
@@ -283,7 +280,9 @@ export const generateCv = createServerFn({ method: "POST" })
 async function generateCvInner({ data, context }: { data: CvInput; context: any }) {
 
     const { supabase, userId } = context;
-    if (!process.env.GEMINI_API_KEY) throw new Error("AI is not configured.");
+    if (!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY) {
+      throw new Error("AI is not configured (missing OPENROUTER_API_KEY and GEMINI_API_KEY).");
+    }
 
     const { data: profile } = await supabase
       .from("profiles")

@@ -8,10 +8,10 @@
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Free-tier model on OpenRouter. Gemini Flash via OpenRouter when available,
-// otherwise a strong free fallback model. OpenRouter's free model lineup can
-// change over time — update here if this specific slug stops working.
-const DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free";
+// Free-tier auto-router on OpenRouter: automatically picks from currently
+// available free models based on the request, so this stays working even
+// if a specific free model slug gets removed or renamed over time.
+const DEFAULT_MODEL = "openrouter/free";
 
 export type OpenRouterMessage = { role: "user" | "assistant"; content: string };
 
