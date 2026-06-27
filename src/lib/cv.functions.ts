@@ -187,20 +187,16 @@ async function getCvCost(supabase: any, tenantId: string | null): Promise<number
   return (data as any)?.cv_credit_cost ?? 5;
 }
 
-async function generateAnalysis(
-  gateway: ReturnType<typeof createLovableAiGatewayProvider>,
-  cv: CvOutput,
-  input: CvInput,
-) {
+async function generateAnalysis(cv: CvOutput, input: CvInput) {
   const lang = input.locale === "ar" ? "Arabic" : "English";
   try {
-    const result = await generateText({
-      model: gateway("google/gemini-3-flash-preview"),
-      maxOutputTokens: 4096,
+    const text = await geminiGenerateText({
       system: `You are a senior career coach. Output only one JSON object in ${lang}. Keys: strengths (array of 4-6 strings), weaknesses (array of 3-5 strings), interviewQuestions (array of 6-8 objects each {question, hint}), improvementPlan (array of 4-6 strings), platforms (array of 4-6 objects each {name, url, fitScore: number 0-100, reason}). The platforms must be real Egypt job boards (LinkedIn, Wuzzuf, Bayt, Forasna, Indeed Egypt, NaukriGulf, Tanqeeb). Score how well this candidate fits each platform.`,
       prompt: `Candidate: ${input.fullName}, Role: ${input.jobTitle}, Industry: ${input.industry}, Seniority: ${input.seniority}\nSummary: ${cv.summary}\nSkills: ${cv.competencies.join(", ")}`,
+      jsonMode: true,
+      maxOutputTokens: 4096,
     });
-    return normalizeAnalysis(extractJsonObject(result.text), input);
+    return normalizeAnalysis(extractJsonObject(text), input);
   } catch {
     return normalizeAnalysis(null, input);
   }
