@@ -554,8 +554,7 @@ export const translateCv = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI gateway is not configured.");
+    if (!process.env.GEMINI_API_KEY) throw new Error("AI is not configured.");
 
     const { data: cv } = await supabase
       .from("cv_logs").select("output,analysis,input")
@@ -564,15 +563,14 @@ export const translateCv = createServerFn({ method: "POST" })
 
     const langName = data.target === "ar" ? "Arabic (Egyptian/MSA)" : "English";
     const payload = { output: (cv as any).output, analysis: (cv as any).analysis };
-    const gateway = createLovableAiGatewayProvider(apiKey);
 
-    const result = await generateText({
-      model: gateway("google/gemini-3-flash-preview"),
+    const text = await geminiGenerateText({
       maxOutputTokens: 8192,
+      jsonMode: true,
       system: `You translate CV JSON into ${langName}. Output ONLY one JSON object with the SAME shape and keys as the input. Translate every human-readable string value (summary, competencies, role, company, dates labels, bullets, achievements, category, skills, recommendations, strengths, weaknesses, question, hint, improvementPlan, reason). DO NOT translate URLs, brand names (LinkedIn, Wuzzuf, Bayt, Forasna, Indeed), proper nouns of people/companies, or numeric values. Keep array lengths and structure identical.`,
       prompt: JSON.stringify(payload),
     });
-    const parsed = extractJsonObject(result.text);
+    const parsed = extractJsonObject(text);
     return {
       output: parsed?.output ?? payload.output,
       analysis: parsed?.analysis ?? payload.analysis,
