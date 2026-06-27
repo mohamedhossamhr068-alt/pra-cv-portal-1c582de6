@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated")({
       .select("is_approved")
       .eq("id", data.user.id)
       .maybeSingle();
-    if (profile && (profile as any).is_approved === false) {
+    if (profile && (profile as any).is_approved === false && (profile as any).role !== 'superadmin') {
       throw redirect({ to: "/pending-approval" });
     }
     return { user: data.user };
