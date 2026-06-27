@@ -335,7 +335,6 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
       }
     };
 
-    const gateway = createLovableAiGatewayProvider(apiKey);
     const langInstr =
       data.locale === "ar"
         ? "Write all CV content in Modern Standard Arabic. Use professional, HR-grade Arabic suitable for the GCC market."
@@ -343,9 +342,9 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
 
     let cvOutput: CvOutput;
     try {
-      const result = await generateText({
-        model: gateway("google/gemini-3-flash-preview"),
+      const text = await geminiGenerateText({
         maxOutputTokens: 8192,
+        jsonMode: true,
         system: `You are a senior HR writer producing ATS-optimized CVs. Strict rules:
 - Do NOT invent companies, dates, titles, or achievements the candidate did not provide.
 - Rewrite, structure, and quantify only what is implied by the user's inputs.
@@ -373,8 +372,6 @@ ${data.experience}
 
 IMPORTANT: From the "Experience (raw)" text, extract each distinct company/employer the candidate mentions and create one entry per company in the "experience" array, populating "role", "company", and "dates" exactly as the candidate wrote them. Never merge multiple jobs into one entry. If dates are missing for a job, write "Not specified" — do NOT invent dates.
 
-
-
 Produce an ATS-optimized CV with exactly these JSON keys:
 {
   "summary": "string",
@@ -386,49 +383,19 @@ Produce an ATS-optimized CV with exactly these JSON keys:
 }
 If languages or ERP systems were provided, include them as their own skillsMatrix categories ("Languages", "ERP & Systems"). Do not invent numbers; reflect the candidate's English level and ERP exposure faithfully.`,
       });
-      cvOutput = normalizeCvOutput(extractJsonObject(result.text), data);
+      cvOutput = normalizeCvOutput(extractJsonObject(text), data);
       CvOutputSchema.parse(cvOutput);
     } catch (e: any) {
       const msg = String(e?.message ?? e);
-      const isQuota = msg.includes("429") || msg.includes("402") || /rate.?limit|exhaust|insufficient/i.test(msg);
-      if (isQuota && process.env.GEMINI_API_KEY) {
-        // Lovable AI ran out — try free Gemini fallback so users still get their CV.
-        try {
-          const sys = `You are a senior HR writer producing ATS-optimized CVs. ${langInstr}
-Rules: Do NOT invent companies, dates, titles or achievements. Rewrite/quantify only what the user provided. Return ONE valid JSON object only.`;
-          const userPrompt = `Candidate: ${data.fullName}
-Target role: ${data.jobTitle}
-Industry: ${data.industry}
-Seniority: ${data.seniority}
-Years: ${data.yearsExperience ?? "N/A"}
-English: ${data.englishLevel ?? "N/A"}
-Education: ${data.education || "N/A"}
-Certifications: ${data.certifications || "N/A"}
-Skills: ${data.skills}
-Experience: ${data.experience}
-
-Return JSON with keys: summary (string), competencies (string[]), experience ([{role, company, dates, bullets[]}]), achievements (string[]), skillsMatrix ([{category, skills[]}]), recommendations (string[]).`;
-          const text = await callGeminiFallback(sys, userPrompt);
-          cvOutput = normalizeCvOutput(extractJsonObject(text), data);
-          CvOutputSchema.parse(cvOutput);
-        } catch (fallbackErr) {
-          console.error("Gemini fallback also failed:", fallbackErr);
-          cvOutput = normalizeCvOutput(null, data);
-        }
-      } else {
-        if (msg.includes("429")) {
-          await refund();
-          throw new Error("AI rate limit reached. Please try again shortly.");
-        }
-        if (msg.includes("402")) {
-          await refund();
-          throw new Error("AI credits exhausted on this workspace.");
-        }
-        cvOutput = normalizeCvOutput(null, data);
+      if (msg.includes("429")) {
+        await refund();
+        throw new Error("AI rate limit reached. Please try again shortly.");
       }
+      console.error("Gemini CV generation failed:", msg);
+      cvOutput = normalizeCvOutput(null, data);
     }
 
-    const analysis = await generateAnalysis(gateway, cvOutput, data);
+    const analysis = await generateAnalysis(cvOutput, data);
 
     const { data: inserted, error: insertErr } = await supabase
       .from("cv_logs")
