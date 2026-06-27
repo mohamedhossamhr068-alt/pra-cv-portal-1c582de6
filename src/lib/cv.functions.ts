@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { geminiGenerateText } from "./gemini.server";
 
 const CvOutputSchema = z.object({
   summary: z.string(),
@@ -73,29 +72,6 @@ function extractJsonObject(text: string) {
   return JSON.parse(withoutFence.slice(start, end + 1));
 }
 
-/**
- * Free Google Gemini fallback when Lovable AI gateway is exhausted (402) or rate-limited (429).
- * Uses GEMINI_API_KEY — free tier supports 1500 req/day on gemini-2.0-flash.
- */
-async function callGeminiFallback(system: string, prompt: string): Promise<string> {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY not configured");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.6, maxOutputTokens: 8192, responseMimeType: "application/json" },
-    }),
-  });
-  if (!res.ok) throw new Error(`Gemini fallback ${res.status}: ${await res.text()}`);
-  const json = await res.json();
-  const text = json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join("") ?? "";
-  if (!text) throw new Error("Gemini fallback returned empty response");
-  return text;
-}
 
 function splitSkills(skills: string) {
   return skills
@@ -188,20 +164,16 @@ async function getCvCost(supabase: any, tenantId: string | null): Promise<number
   return (data as any)?.cv_credit_cost ?? 5;
 }
 
-async function generateAnalysis(
-  gateway: ReturnType<typeof createLovableAiGatewayProvider>,
-  cv: CvOutput,
-  input: CvInput,
-) {
+async function generateAnalysis(cv: CvOutput, input: CvInput) {
   const lang = input.locale === "ar" ? "Arabic" : "English";
   try {
-    const result = await generateText({
-      model: gateway("google/gemini-3-flash-preview"),
-      maxOutputTokens: 4096,
+    const text = await geminiGenerateText({
       system: `You are a senior career coach. Output only one JSON object in ${lang}. Keys: strengths (array of 4-6 strings), weaknesses (array of 3-5 strings), interviewQuestions (array of 6-8 objects each {question, hint}), improvementPlan (array of 4-6 strings), platforms (array of 4-6 objects each {name, url, fitScore: number 0-100, reason}). The platforms must be real Egypt job boards (LinkedIn, Wuzzuf, Bayt, Forasna, Indeed Egypt, NaukriGulf, Tanqeeb). Score how well this candidate fits each platform.`,
       prompt: `Candidate: ${input.fullName}, Role: ${input.jobTitle}, Industry: ${input.industry}, Seniority: ${input.seniority}\nSummary: ${cv.summary}\nSkills: ${cv.competencies.join(", ")}`,
+      jsonMode: true,
+      maxOutputTokens: 4096,
     });
-    return normalizeAnalysis(extractJsonObject(result.text), input);
+    return normalizeAnalysis(extractJsonObject(text), input);
   } catch {
     return normalizeAnalysis(null, input);
   }
@@ -282,8 +254,7 @@ export const generateCv = createServerFn({ method: "POST" })
 async function generateCvInner({ data, context }: { data: CvInput; context: any }) {
 
     const { supabase, userId } = context;
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI gateway is not configured.");
+    if (!process.env.GEMINI_API_KEY) throw new Error("AI is not configured.");
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -341,7 +312,6 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
       }
     };
 
-    const gateway = createLovableAiGatewayProvider(apiKey);
     const langInstr =
       data.locale === "ar"
         ? "Write all CV content in Modern Standard Arabic. Use professional, HR-grade Arabic suitable for the GCC market."
@@ -349,9 +319,9 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
 
     let cvOutput: CvOutput;
     try {
-      const result = await generateText({
-        model: gateway("google/gemini-3-flash-preview"),
+      const text = await geminiGenerateText({
         maxOutputTokens: 8192,
+        jsonMode: true,
         system: `You are a senior HR writer producing ATS-optimized CVs. Strict rules:
 - Do NOT invent companies, dates, titles, or achievements the candidate did not provide.
 - Rewrite, structure, and quantify only what is implied by the user's inputs.
@@ -379,8 +349,6 @@ ${data.experience}
 
 IMPORTANT: From the "Experience (raw)" text, extract each distinct company/employer the candidate mentions and create one entry per company in the "experience" array, populating "role", "company", and "dates" exactly as the candidate wrote them. Never merge multiple jobs into one entry. If dates are missing for a job, write "Not specified" — do NOT invent dates.
 
-
-
 Produce an ATS-optimized CV with exactly these JSON keys:
 {
   "summary": "string",
@@ -392,49 +360,19 @@ Produce an ATS-optimized CV with exactly these JSON keys:
 }
 If languages or ERP systems were provided, include them as their own skillsMatrix categories ("Languages", "ERP & Systems"). Do not invent numbers; reflect the candidate's English level and ERP exposure faithfully.`,
       });
-      cvOutput = normalizeCvOutput(extractJsonObject(result.text), data);
+      cvOutput = normalizeCvOutput(extractJsonObject(text), data);
       CvOutputSchema.parse(cvOutput);
     } catch (e: any) {
       const msg = String(e?.message ?? e);
-      const isQuota = msg.includes("429") || msg.includes("402") || /rate.?limit|exhaust|insufficient/i.test(msg);
-      if (isQuota && process.env.GEMINI_API_KEY) {
-        // Lovable AI ran out — try free Gemini fallback so users still get their CV.
-        try {
-          const sys = `You are a senior HR writer producing ATS-optimized CVs. ${langInstr}
-Rules: Do NOT invent companies, dates, titles or achievements. Rewrite/quantify only what the user provided. Return ONE valid JSON object only.`;
-          const userPrompt = `Candidate: ${data.fullName}
-Target role: ${data.jobTitle}
-Industry: ${data.industry}
-Seniority: ${data.seniority}
-Years: ${data.yearsExperience ?? "N/A"}
-English: ${data.englishLevel ?? "N/A"}
-Education: ${data.education || "N/A"}
-Certifications: ${data.certifications || "N/A"}
-Skills: ${data.skills}
-Experience: ${data.experience}
-
-Return JSON with keys: summary (string), competencies (string[]), experience ([{role, company, dates, bullets[]}]), achievements (string[]), skillsMatrix ([{category, skills[]}]), recommendations (string[]).`;
-          const text = await callGeminiFallback(sys, userPrompt);
-          cvOutput = normalizeCvOutput(extractJsonObject(text), data);
-          CvOutputSchema.parse(cvOutput);
-        } catch (fallbackErr) {
-          console.error("Gemini fallback also failed:", fallbackErr);
-          cvOutput = normalizeCvOutput(null, data);
-        }
-      } else {
-        if (msg.includes("429")) {
-          await refund();
-          throw new Error("AI rate limit reached. Please try again shortly.");
-        }
-        if (msg.includes("402")) {
-          await refund();
-          throw new Error("AI credits exhausted on this workspace.");
-        }
-        cvOutput = normalizeCvOutput(null, data);
+      if (msg.includes("429")) {
+        await refund();
+        throw new Error("AI rate limit reached. Please try again shortly.");
       }
+      console.error("Gemini CV generation failed:", msg);
+      cvOutput = normalizeCvOutput(null, data);
     }
 
-    const analysis = await generateAnalysis(gateway, cvOutput, data);
+    const analysis = await generateAnalysis(cvOutput, data);
 
     const { data: inserted, error: insertErr } = await supabase
       .from("cv_logs")
@@ -593,8 +531,7 @@ export const translateCv = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI gateway is not configured.");
+    if (!process.env.GEMINI_API_KEY) throw new Error("AI is not configured.");
 
     const { data: cv } = await supabase
       .from("cv_logs").select("output,analysis,input")
@@ -603,15 +540,14 @@ export const translateCv = createServerFn({ method: "POST" })
 
     const langName = data.target === "ar" ? "Arabic (Egyptian/MSA)" : "English";
     const payload = { output: (cv as any).output, analysis: (cv as any).analysis };
-    const gateway = createLovableAiGatewayProvider(apiKey);
 
-    const result = await generateText({
-      model: gateway("google/gemini-3-flash-preview"),
+    const text = await geminiGenerateText({
       maxOutputTokens: 8192,
+      jsonMode: true,
       system: `You translate CV JSON into ${langName}. Output ONLY one JSON object with the SAME shape and keys as the input. Translate every human-readable string value (summary, competencies, role, company, dates labels, bullets, achievements, category, skills, recommendations, strengths, weaknesses, question, hint, improvementPlan, reason). DO NOT translate URLs, brand names (LinkedIn, Wuzzuf, Bayt, Forasna, Indeed), proper nouns of people/companies, or numeric values. Keep array lengths and structure identical.`,
       prompt: JSON.stringify(payload),
     });
-    const parsed = extractJsonObject(result.text);
+    const parsed = extractJsonObject(text);
     return {
       output: parsed?.output ?? payload.output,
       analysis: parsed?.analysis ?? payload.analysis,
