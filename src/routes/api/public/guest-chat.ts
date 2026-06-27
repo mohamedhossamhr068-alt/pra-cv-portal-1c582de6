@@ -69,8 +69,7 @@ export const Route = createFileRoute("/api/public/guest-chat")({
         // bot reply if enabled and no human has taken over
         let botReply: string | null = null;
         if (conv.bot_enabled && !conv.human_replied) {
-          const key = process.env.LOVABLE_API_KEY;
-          if (key) {
+          if (process.env.GEMINI_API_KEY) {
             try {
               const { data: history } = await supabaseAdmin
                 .from("guest_messages" as any)
@@ -82,13 +81,13 @@ export const Route = createFileRoute("/api/public/guest-chat")({
                 role: m.sender === "guest" ? ("user" as const) : ("assistant" as const),
                 content: m.body as string,
               }));
-              const gateway = createLovableAiGatewayProvider(key);
               const pricing = await fetchBotPricing();
               const system = buildBotSystem(body.lang, body.message, { audience: "guest", ...pricing });
-              const { text } = await generateText({
-                model: gateway("google/gemini-3-flash-preview"),
+              const text = await geminiGenerateText({
                 system,
                 messages,
+                temperature: 0.7,
+                maxOutputTokens: 2048,
               });
               botReply = text;
               await supabaseAdmin.rpc("chat_insert_bot_reply" as any, {
