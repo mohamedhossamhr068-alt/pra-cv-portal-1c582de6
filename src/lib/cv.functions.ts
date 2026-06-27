@@ -277,8 +277,7 @@ export const generateCv = createServerFn({ method: "POST" })
 async function generateCvInner({ data, context }: { data: CvInput; context: any }) {
 
     const { supabase, userId } = context;
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI gateway is not configured.");
+    if (!process.env.GEMINI_API_KEY) throw new Error("AI is not configured.");
 
     const { data: profile } = await supabase
       .from("profiles")
