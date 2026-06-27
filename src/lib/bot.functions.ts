@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { buildBotSystem, fetchBotPricing } from "./ai-gateway.server";
 import { geminiGenerateText } from "./gemini.server";
+import { openRouterGenerateText } from "./openrouter.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function callBot(
@@ -12,12 +13,23 @@ async function callBot(
   const lastUser = [...history].reverse().find((h) => h.role === "user")?.content;
   const pricing = await fetchBotPricing();
   const system = buildBotSystem(lang, lastUser, { audience, ...pricing });
-  return await geminiGenerateText({
-    system,
-    messages: history.slice(-12),
-    temperature: 0.7,
-    maxOutputTokens: 2048,
-  });
+  const messages = history.slice(-12);
+  try {
+    return await geminiGenerateText({
+      system,
+      messages,
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+    });
+  } catch (geminiErr: any) {
+    console.error("Direct Gemini bot call failed, trying OpenRouter fallback:", geminiErr?.message);
+    return await openRouterGenerateText({
+      system,
+      messages,
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+    });
+  }
 }
 
 export const triggerSupportBotReply = createServerFn({ method: "POST" })

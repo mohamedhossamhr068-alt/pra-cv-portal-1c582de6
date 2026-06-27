@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { geminiGenerateText } from "./gemini.server";
+import { openRouterGenerateText } from "./openrouter.server";
 
 const CvOutputSchema = z.object({
   summary: z.string(),
@@ -70,6 +71,34 @@ function extractJsonObject(text: string) {
   const end = withoutFence.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) throw new Error("AI response did not contain JSON.");
   return JSON.parse(withoutFence.slice(start, end + 1));
+}
+
+/**
+ * Tries the direct Gemini API first (primary provider). If that fails for
+ * any reason (e.g. Google Cloud billing/prepay not set up on the project),
+ * falls back to OpenRouter — which can itself route to Gemini or another
+ * free model — before giving up. This does not change Gemini's role as the
+ * primary provider; it only adds a safety net.
+ */
+async function generateTextWithFallback(opts: {
+  system: string;
+  prompt: string;
+  jsonMode?: boolean;
+  maxOutputTokens?: number;
+}): Promise<string> {
+  try {
+    return await geminiGenerateText(opts);
+  } catch (geminiErr: any) {
+    console.error("Direct Gemini call failed, trying OpenRouter fallback:", geminiErr?.message);
+    try {
+      return await openRouterGenerateText(opts);
+    } catch (openRouterErr: any) {
+      console.error("OpenRouter fallback also failed:", openRouterErr?.message);
+      // Re-throw the original Gemini error so existing error-message checks
+      // (e.g. "429") upstream keep working unchanged.
+      throw geminiErr;
+    }
+  }
 }
 
 
@@ -167,7 +196,7 @@ async function getCvCost(supabase: any, tenantId: string | null): Promise<number
 async function generateAnalysis(cv: CvOutput, input: CvInput) {
   const lang = input.locale === "ar" ? "Arabic" : "English";
   try {
-    const text = await geminiGenerateText({
+    const text = await generateTextWithFallback({
       system: `You are a senior career coach. Output only one JSON object in ${lang}. Keys: strengths (array of 4-6 strings), weaknesses (array of 3-5 strings), interviewQuestions (array of 6-8 objects each {question, hint}), improvementPlan (array of 4-6 strings), platforms (array of 4-6 objects each {name, url, fitScore: number 0-100, reason}). The platforms must be real Egypt job boards (LinkedIn, Wuzzuf, Bayt, Forasna, Indeed Egypt, NaukriGulf, Tanqeeb). Score how well this candidate fits each platform.`,
       prompt: `Candidate: ${input.fullName}, Role: ${input.jobTitle}, Industry: ${input.industry}, Seniority: ${input.seniority}\nSummary: ${cv.summary}\nSkills: ${cv.competencies.join(", ")}`,
       jsonMode: true,
@@ -319,7 +348,7 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
 
     let cvOutput: CvOutput;
     try {
-      const text = await geminiGenerateText({
+      const text = await generateTextWithFallback({
         maxOutputTokens: 8192,
         jsonMode: true,
         system: `You are a senior HR writer producing ATS-optimized CVs. Strict rules:
@@ -531,7 +560,9 @@ export const translateCv = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    if (!process.env.GEMINI_API_KEY) throw new Error("AI is not configured.");
+    if (!process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) {
+      throw new Error("AI is not configured.");
+    }
 
     const { data: cv } = await supabase
       .from("cv_logs").select("output,analysis,input")
@@ -541,7 +572,7 @@ export const translateCv = createServerFn({ method: "POST" })
     const langName = data.target === "ar" ? "Arabic (Egyptian/MSA)" : "English";
     const payload = { output: (cv as any).output, analysis: (cv as any).analysis };
 
-    const text = await geminiGenerateText({
+    const text = await generateTextWithFallback({
       maxOutputTokens: 8192,
       jsonMode: true,
       system: `You translate CV JSON into ${langName}. Output ONLY one JSON object with the SAME shape and keys as the input. Translate every human-readable string value (summary, competencies, role, company, dates labels, bullets, achievements, category, skills, recommendations, strengths, weaknesses, question, hint, improvementPlan, reason). DO NOT translate URLs, brand names (LinkedIn, Wuzzuf, Bayt, Forasna, Indeed), proper nouns of people/companies, or numeric values. Keep array lengths and structure identical.`,
