@@ -302,6 +302,10 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
 
     const monthKey = new Date().toISOString().slice(0, 7);
 
+    console.error("CV_RESERVE_DEBUG", JSON.stringify({
+      userId, tenantId, plan, limit, monthKey, credits: profile?.credits, CV_CREDIT_COST,
+    }));
+
     // Atomically check + deduct credits and bump the monthly quota in one
     // locked transaction, so concurrent requests (double-click, multiple
     // tabs) cannot both pass the check against the same stale balance.
@@ -316,6 +320,7 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
       },
     );
     if (reserveErr) {
+      console.error("CV_RESERVE_DEBUG_ERROR", JSON.stringify({ message: reserveErr.message, details: (reserveErr as any).details, hint: (reserveErr as any).hint, code: (reserveErr as any).code }));
       const msg = reserveErr.message || "";
       if (msg.includes("NO_CREDITS")) throw new Error("NO_CREDITS");
       if (msg.includes("QUOTA_REACHED")) throw new Error("QUOTA_REACHED");
