@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { buildBotSystem, fetchBotPricing } from "./ai-gateway.server";
 import { geminiGenerateText } from "./gemini.server";
-import { openRouterGenerateText } from "./openrouter.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function callBot(
@@ -12,24 +11,16 @@ async function callBot(
 ) {
   const lastUser = [...history].reverse().find((h) => h.role === "user")?.content;
   const pricing = await fetchBotPricing();
-  const system = buildBotSystem(lang, lastUser, { audience, ...pricing });
+  const bilingualHint =
+    "Detect the user's language automatically. Reply in Arabic if the user wrote Arabic, otherwise reply in English. Be warm, concise, and guide the user step-by-step through the platform (login, CV creation, jobs, billing, top-up).";
+  const system = `${buildBotSystem(lang, lastUser, { audience, ...pricing })}\n\n${bilingualHint}`;
   const messages = history.slice(-12);
-  try {
-    return await openRouterGenerateText({
-      system,
-      messages,
-      temperature: 0.7,
-      maxOutputTokens: 2048,
-    });
-  } catch (openRouterErr: any) {
-    console.error("OpenRouter bot call failed, trying direct Gemini fallback:", openRouterErr?.message);
-    return await geminiGenerateText({
-      system,
-      messages,
-      temperature: 0.7,
-      maxOutputTokens: 2048,
-    });
-  }
+  return await geminiGenerateText({
+    system,
+    messages,
+    temperature: 0.7,
+    maxOutputTokens: 2048,
+  });
 }
 
 export const triggerSupportBotReply = createServerFn({ method: "POST" })
