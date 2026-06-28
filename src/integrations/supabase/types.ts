@@ -1138,6 +1138,26 @@ export type Database = {
         }
         Returns: string
       }
+      refund_cv_generation: {
+        Args: {
+          _cost: number
+          _period_month: string
+          _tenant_id: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      reserve_cv_generation: {
+        Args: {
+          _period_month: string
+          _plan_limit: number
+          _tenant_id: string
+          _user_id: string
+        }
+        Returns: {
+          credits_left: number
+        }[]
+      }
     }
     Enums: {
       app_permission:
