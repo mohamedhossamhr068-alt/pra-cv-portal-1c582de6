@@ -8,10 +8,16 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) throw redirect({ to: "/auth" });
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_approved, role")
+      .select("is_approved")
       .eq("id", data.user.id)
       .maybeSingle();
-    if (profile && (profile as any).is_approved === false && (profile as any).role !== "superadmin") {
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+    const isSuperAdmin = userRole?.role === "superadmin";
+    if (profile && (profile as any).is_approved === false && !isSuperAdmin) {
       throw redirect({ to: "/pending-approval" });
     }
     return { user: data.user };
