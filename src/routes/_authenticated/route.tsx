@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated")({
       .select("role")
       .eq("user_id", data.user.id)
       .maybeSingle();
-    const isSuperAdmin = userRole?.role === "superadmin";
+    const isSuperAdmin = userRole?.role === 'superadmin';
     if (profile && (profile as any).is_approved === false && !isSuperAdmin) {
       throw redirect({ to: "/pending-approval" });
     }
