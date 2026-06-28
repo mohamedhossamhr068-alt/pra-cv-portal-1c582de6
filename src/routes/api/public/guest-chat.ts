@@ -70,7 +70,7 @@ export const Route = createFileRoute("/api/public/guest-chat")({
         // bot reply if enabled and no human has taken over
         let botReply: string | null = null;
         if (conv.bot_enabled && !conv.human_replied) {
-          if (process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY) {
+          if (process.env.GEMINI_API_KEY) {
             try {
               const { data: history } = await supabaseAdmin
                 .from("guest_messages" as any)
@@ -83,24 +83,15 @@ export const Route = createFileRoute("/api/public/guest-chat")({
                 content: m.body as string,
               }));
               const pricing = await fetchBotPricing();
-              const system = buildBotSystem(body.lang, body.message, { audience: "guest", ...pricing });
-              let text: string;
-              try {
-                text = await openRouterGenerateText({
-                  system,
-                  messages,
-                  temperature: 0.7,
-                  maxOutputTokens: 2048,
-                });
-              } catch (openRouterErr: any) {
-                console.error("OpenRouter guest bot call failed, trying direct Gemini fallback:", openRouterErr?.message);
-                text = await geminiGenerateText({
-                  system,
-                  messages,
-                  temperature: 0.7,
-                  maxOutputTokens: 2048,
-                });
-              }
+              const bilingualHint =
+                "Detect the user's language automatically. Reply in Arabic if the user wrote Arabic, otherwise reply in English. Be warm, concise, and guide the visitor on signing up, creating a CV, and exploring jobs.";
+              const system = `${buildBotSystem(body.lang, body.message, { audience: "guest", ...pricing })}\n\n${bilingualHint}`;
+              const text = await geminiGenerateText({
+                system,
+                messages,
+                temperature: 0.7,
+                maxOutputTokens: 2048,
+              });
               botReply = text;
               await supabaseAdmin.rpc("chat_insert_bot_reply" as any, {
                 _conversation_id: conv.id,
