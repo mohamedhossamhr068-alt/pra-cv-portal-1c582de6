@@ -17,15 +17,15 @@ async function callBot(
   const system = `${buildBotSystem(lang, lastUser, { audience, ...pricing })}\n\n${bilingualHint}`;
   const messages = history.slice(-12);
   try {
-    return await geminiGenerateText({
+    return await openRouterGenerateText({
       system,
       messages,
       temperature: 0.7,
       maxOutputTokens: 2048,
     });
-  } catch (geminiErr: any) {
-    console.error("Direct Gemini bot call failed, trying OpenRouter fallback:", geminiErr?.message);
-    return await openRouterGenerateText({
+  } catch (openRouterErr: any) {
+    console.error("OpenRouter bot call failed, trying direct Gemini fallback:", openRouterErr?.message);
+    return await geminiGenerateText({
       system,
       messages,
       temperature: 0.7,

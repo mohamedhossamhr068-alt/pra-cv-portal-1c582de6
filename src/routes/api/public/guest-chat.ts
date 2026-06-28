@@ -89,15 +89,15 @@ export const Route = createFileRoute("/api/public/guest-chat")({
               const system = `${buildBotSystem(body.lang, body.message, { audience: "guest", ...pricing })}\n\n${bilingualHint}`;
               let text: string;
               try {
-                text = await geminiGenerateText({
+                text = await openRouterGenerateText({
                   system,
                   messages,
                   temperature: 0.7,
                   maxOutputTokens: 2048,
                 });
-              } catch (geminiErr: any) {
-                console.error("Direct Gemini guest bot call failed, trying OpenRouter fallback:", geminiErr?.message);
-                text = await openRouterGenerateText({
+              } catch (openRouterErr: any) {
+                console.error("OpenRouter guest bot call failed, trying direct Gemini fallback:", openRouterErr?.message);
+                text = await geminiGenerateText({
                   system,
                   messages,
                   temperature: 0.7,
