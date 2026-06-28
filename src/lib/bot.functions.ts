@@ -48,7 +48,7 @@ export const triggerSupportBotReply = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!conv) return { ok: false, reason: "not_found" };
     const c = conv as any;
-    if (c.kind !== "support" || !c.bot_enabled || c.human_replied) {
+    if (c.kind !== "support" || !c.bot_enabled) {
       return { ok: false, reason: "disabled" };
     }
     // Authorize: only the conversation owner or a tenant admin can trigger the bot.

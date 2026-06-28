@@ -70,7 +70,7 @@ export const Route = createFileRoute("/api/public/guest-chat")({
 
         // bot reply if enabled and no human has taken over
         let botReply: string | null = null;
-        if (conv.bot_enabled && !conv.human_replied) {
+        if (conv.bot_enabled) {
           if (process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY) {
             try {
               const { data: history } = await supabaseAdmin
