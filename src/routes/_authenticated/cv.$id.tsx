@@ -254,7 +254,7 @@ function CvViewer() {
     if (!pdfRef.current) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
+const html2canvas = (await import("html2canvas-pro")).default;
       const jsPDF = (await import("jspdf")).jsPDF;
       const canvas = await html2canvas(pdfRef.current, {
         scale: 2,
