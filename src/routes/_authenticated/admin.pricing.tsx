@@ -47,6 +47,9 @@ function AdminPricing() {
   const [creditsPro, setCreditsPro] = useState(6);
   const [creditsBusiness, setCreditsBusiness] = useState(15);
   const [bonus, setBonus] = useState(2);
+  const [quotaFree, setQuotaFree] = useState(9999);
+  const [quotaPro, setQuotaPro] = useState(9999);
+  const [quotaBusiness, setQuotaBusiness] = useState(9999);
 
   useEffect(() => {
     if (data) {
