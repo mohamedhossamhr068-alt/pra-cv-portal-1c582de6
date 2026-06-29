@@ -65,6 +65,9 @@ function AdminPricing() {
       setCreditsPro(Number(d.plan_credits_pro ?? 6));
       setCreditsBusiness(Number(d.plan_credits_business ?? 15));
       setBonus(Number(d.bonus_credits ?? 2));
+      setQuotaFree(Number(d.cv_quota_free ?? 9999));
+      setQuotaPro(Number(d.cv_quota_pro ?? 9999));
+      setQuotaBusiness(Number(d.cv_quota_business ?? 9999));
     }
   }, [data]);
 
