@@ -255,6 +255,41 @@ function AdminPricing() {
             </CardContent>
           </Card>
 
+          {/* Monthly CV quota per plan */}
+          <Card className="border-border/60">
+            <CardContent className="space-y-3 p-5">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold">{T("الحد الشهري لتوليد السي في", "Monthly CV generation quota")}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {T("أقصى عدد سي في يقدر يولّده اليوزر شهرياً حسب الباقة.", "Maximum number of CVs a user can generate per month per plan.")}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { key: "free", label: T("مجاني", "Free"), value: quotaFree, set: setQuotaFree },
+                  { key: "pro", label: "Pro", value: quotaPro, set: setQuotaPro },
+                  { key: "business", label: "Business", value: quotaBusiness, set: setQuotaBusiness },
+                ].map((q) => (
+                  <div key={q.key} className="rounded-xl border bg-card p-3 space-y-2">
+                    <Label className="text-sm font-semibold">{q.label}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1000000}
+                      value={q.value}
+                      onChange={(e) => q.set(Math.max(0, parseInt(e.target.value || "0", 10)))}
+                      className="font-bold"
+                    />
+                    <div className="text-[11px] text-muted-foreground">{T("سي في / شهر", "CVs / month")}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+
+
           <Button
             onClick={() => mut.mutate()}
             disabled={mut.isPending}
