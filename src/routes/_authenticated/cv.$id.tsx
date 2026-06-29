@@ -259,9 +259,13 @@ function CvViewer() {
       const canvas = await html2canvas(pdfRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 0,
+        removeContainer: true,
       });
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -269,16 +273,17 @@ function CvViewer() {
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
       pdf.save(`${data.title || "cv"}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
+      console.error("PDF error:", err);
       toast.error(ar ? "تعذر إنشاء PDF" : "Could not generate PDF.");
     } finally {
       setDownloading(false);
