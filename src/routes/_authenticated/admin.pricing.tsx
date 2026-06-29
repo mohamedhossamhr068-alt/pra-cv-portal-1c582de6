@@ -88,6 +88,9 @@ function AdminPricing() {
           credits_pro: creditsPro,
           credits_business: creditsBusiness,
           bonus_credits: bonus,
+          cv_quota_free: quotaFree,
+          cv_quota_pro: quotaPro,
+          cv_quota_business: quotaBusiness,
         },
       }),
     onSuccess: () => {
