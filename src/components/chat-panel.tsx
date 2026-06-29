@@ -88,7 +88,22 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
       setText("");
       qc.invalidateQueries({ queryKey: ["chat-messages", conversationId] });
       if (triggerBot && kind === "support") {
-        botFn({ data: { conversation_id: conversationId, lang: i18n.language } }).catch(() => {});
+        try {
+          const result = await botFn({ data: { conversation_id: conversationId, lang: i18n.language } });
+          if (!result?.ok) {
+            toast.error(
+              ar
+                ? "تعذّر الحصول على رد المساعد الآلي الآن. سيتابع معك مشرف بشري قريباً."
+                : "Couldn't get a reply from the assistant right now. A human moderator will follow up.",
+            );
+          }
+        } catch {
+          toast.error(
+            ar
+              ? "تعذّر الحصول على رد المساعد الآلي الآن. سيتابع معك مشرف بشري قريباً."
+              : "Couldn't get a reply from the assistant right now. A human moderator will follow up.",
+          );
+        }
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");

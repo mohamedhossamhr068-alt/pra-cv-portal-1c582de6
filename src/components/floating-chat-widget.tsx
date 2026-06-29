@@ -193,6 +193,8 @@ function AuthedSupportChat({ ar, onClose }: { ar: boolean; onClose: () => void }
   const [msgs, setMsgs] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [botPending, setBotPending] = useState(false);
+  const [botError, setBotError] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -250,17 +252,32 @@ function AuthedSupportChat({ ar, onClose }: { ar: boolean; onClose: () => void }
     const text = input.trim();
     if (!text || !convId || sending) return;
     setSending(true);
+    setBotError(null);
     setInput("");
     try {
       const { sendChatMessage } = await import("@/lib/chat.functions");
       await sendChatMessage({ data: { conversation_id: convId, body: text } });
-      // Fire-and-forget bot trigger
+      setSending(false);
+      setBotPending(true);
       const { triggerSupportBotReply } = await import("@/lib/bot.functions");
-      triggerSupportBotReply({ data: { conversation_id: convId, lang: ar ? "ar" : "en" } }).catch(() => {});
+      const result = await triggerSupportBotReply({ data: { conversation_id: convId, lang: ar ? "ar" : "en" } });
+      if (!result?.ok) {
+        setBotError(
+          ar
+            ? "تعذّر الحصول على رد المساعد الآلي الآن. سيتابع معك مشرف بشري قريباً، أو حاول مرة أخرى."
+            : "Couldn't get a reply from the assistant right now. A human moderator will follow up, or try again.",
+        );
+      }
     } catch (e: any) {
       console.error(e);
+      setBotError(
+        ar
+          ? "حدث خطأ في إرسال الرسالة. حاول مرة أخرى."
+          : "Something went wrong sending your message. Please try again.",
+      );
     } finally {
       setSending(false);
+      setBotPending(false);
     }
   };
 
@@ -288,7 +305,12 @@ function AuthedSupportChat({ ar, onClose }: { ar: boolean; onClose: () => void }
             </BubbleRow>
           );
         })}
-        {sending && <div className="text-xs text-muted-foreground">{ar ? "يكتب…" : "Typing…"}</div>}
+        {botPending && <div className="text-xs text-muted-foreground">{ar ? "يكتب…" : "Typing…"}</div>}
+        {botError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {botError}
+          </div>
+        )}
         <div ref={endRef} />
       </div>
       <Composer ar={ar} value={input} onChange={setInput} onSend={send} sending={sending} />
