@@ -675,6 +675,9 @@ export type Database = {
           created_at: string
           currency: string
           cv_credit_cost: number
+          cv_quota_business: number
+          cv_quota_free: number
+          cv_quota_pro: number
           id: string
           industry: string | null
           logo_url: string | null
@@ -695,6 +698,9 @@ export type Database = {
           created_at?: string
           currency?: string
           cv_credit_cost?: number
+          cv_quota_business?: number
+          cv_quota_free?: number
+          cv_quota_pro?: number
           id?: string
           industry?: string | null
           logo_url?: string | null
@@ -715,6 +721,9 @@ export type Database = {
           created_at?: string
           currency?: string
           cv_credit_cost?: number
+          cv_quota_business?: number
+          cv_quota_free?: number
+          cv_quota_pro?: number
           id?: string
           industry?: string | null
           logo_url?: string | null
@@ -1010,6 +1019,14 @@ export type Database = {
           _make_moderator?: boolean
           _permissions: Database["public"]["Enums"]["app_permission"][]
           _target_user: string
+        }
+        Returns: undefined
+      }
+      admin_update_cv_quota: {
+        Args: {
+          _quota_business?: number
+          _quota_free?: number
+          _quota_pro?: number
         }
         Returns: undefined
       }
