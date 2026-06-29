@@ -297,8 +297,20 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
       ? await supabase.from("subscriptions").select("plan").eq("tenant_id", tenantId).maybeSingle()
       : { data: null };
     const plan = (sub?.plan as string) ?? "free";
-    const planLimits: Record<string, number> = { free: 9999, pro: 9999, business: 9999 };
-    const limit = planLimits[plan] ?? 9999;
+    let limit = 9999;
+    if (tenantId) {
+      const { data: tq } = await supabase
+        .from("tenants")
+        .select("cv_quota_free,cv_quota_pro,cv_quota_business")
+        .eq("id", tenantId)
+        .maybeSingle();
+      const map: Record<string, number> = {
+        free: (tq as any)?.cv_quota_free ?? 9999,
+        pro: (tq as any)?.cv_quota_pro ?? 9999,
+        business: (tq as any)?.cv_quota_business ?? 9999,
+      };
+      limit = map[plan] ?? 9999;
+    }
 
     const monthKey = new Date().toISOString().slice(0, 7);
 

@@ -178,7 +178,7 @@ export const getTenantPricing = createServerFn({ method: "GET" })
     if (!prof?.tenant_id) return null;
     const { data } = await supabase
       .from("tenants")
-      .select("cv_credit_cost,match_credit_cost,scrape_credit_cost,currency,plan_price_free,plan_price_pro,plan_price_business,plan_credits_free,plan_credits_pro,plan_credits_business,bonus_credits")
+      .select("cv_credit_cost,match_credit_cost,scrape_credit_cost,currency,plan_price_free,plan_price_pro,plan_price_business,plan_credits_free,plan_credits_pro,plan_credits_business,bonus_credits,cv_quota_free,cv_quota_pro,cv_quota_business")
       .eq("id", prof.tenant_id)
       .maybeSingle();
     return data;
@@ -202,6 +202,9 @@ export const updateTenantPricing = createServerFn({ method: "POST" })
         credits_pro: z.number().int().min(0).max(1000000).optional(),
         credits_business: z.number().int().min(0).max(1000000).optional(),
         bonus_credits: z.number().int().min(0).max(10000).optional(),
+        cv_quota_free: z.number().int().min(0).max(1000000).optional(),
+        cv_quota_pro: z.number().int().min(0).max(1000000).optional(),
+        cv_quota_business: z.number().int().min(0).max(1000000).optional(),
       })
       .parse(d),
   )
@@ -220,6 +223,18 @@ export const updateTenantPricing = createServerFn({ method: "POST" })
       _bonus_credits: data.bonus_credits ?? null,
     } as any);
     if (error) throw error;
+    if (
+      data.cv_quota_free !== undefined ||
+      data.cv_quota_pro !== undefined ||
+      data.cv_quota_business !== undefined
+    ) {
+      const { error: qErr } = await context.supabase.rpc("admin_update_cv_quota" as any, {
+        _quota_free: data.cv_quota_free ?? null,
+        _quota_pro: data.cv_quota_pro ?? null,
+        _quota_business: data.cv_quota_business ?? null,
+      } as any);
+      if (qErr) throw qErr;
+    }
     return { ok: true };
   });
 

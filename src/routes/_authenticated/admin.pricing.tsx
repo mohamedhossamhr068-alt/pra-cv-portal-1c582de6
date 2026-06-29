@@ -47,6 +47,9 @@ function AdminPricing() {
   const [creditsPro, setCreditsPro] = useState(6);
   const [creditsBusiness, setCreditsBusiness] = useState(15);
   const [bonus, setBonus] = useState(2);
+  const [quotaFree, setQuotaFree] = useState(9999);
+  const [quotaPro, setQuotaPro] = useState(9999);
+  const [quotaBusiness, setQuotaBusiness] = useState(9999);
 
   useEffect(() => {
     if (data) {
@@ -62,6 +65,9 @@ function AdminPricing() {
       setCreditsPro(Number(d.plan_credits_pro ?? 6));
       setCreditsBusiness(Number(d.plan_credits_business ?? 15));
       setBonus(Number(d.bonus_credits ?? 2));
+      setQuotaFree(Number(d.cv_quota_free ?? 9999));
+      setQuotaPro(Number(d.cv_quota_pro ?? 9999));
+      setQuotaBusiness(Number(d.cv_quota_business ?? 9999));
     }
   }, [data]);
 
@@ -82,6 +88,9 @@ function AdminPricing() {
           credits_pro: creditsPro,
           credits_business: creditsBusiness,
           bonus_credits: bonus,
+          cv_quota_free: quotaFree,
+          cv_quota_pro: quotaPro,
+          cv_quota_business: quotaBusiness,
         },
       }),
     onSuccess: () => {
@@ -245,6 +254,41 @@ function AdminPricing() {
               ))}
             </CardContent>
           </Card>
+
+          {/* Monthly CV quota per plan */}
+          <Card className="border-border/60">
+            <CardContent className="space-y-3 p-5">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold">{T("الحد الشهري لتوليد السي في", "Monthly CV generation quota")}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {T("أقصى عدد سي في يقدر يولّده اليوزر شهرياً حسب الباقة.", "Maximum number of CVs a user can generate per month per plan.")}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { key: "free", label: T("مجاني", "Free"), value: quotaFree, set: setQuotaFree },
+                  { key: "pro", label: "Pro", value: quotaPro, set: setQuotaPro },
+                  { key: "business", label: "Business", value: quotaBusiness, set: setQuotaBusiness },
+                ].map((q) => (
+                  <div key={q.key} className="rounded-xl border bg-card p-3 space-y-2">
+                    <Label className="text-sm font-semibold">{q.label}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1000000}
+                      value={q.value}
+                      onChange={(e) => q.set(Math.max(0, parseInt(e.target.value || "0", 10)))}
+                      className="font-bold"
+                    />
+                    <div className="text-[11px] text-muted-foreground">{T("سي في / شهر", "CVs / month")}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+
 
           <Button
             onClick={() => mut.mutate()}

@@ -28,8 +28,13 @@ export const getMe = createServerFn({ method: "GET" })
       .eq("period_month", monthKey)
       .maybeSingle();
 
-    const planLimits: Record<string, number> = { free: 9999, pro: 9999, business: 9999 };
     const plan = subscription?.plan ?? "free";
+    const tq: any = tenant ?? {};
+    const planLimits: Record<string, number> = {
+      free: tq.cv_quota_free ?? 9999,
+      pro: tq.cv_quota_pro ?? 9999,
+      business: tq.cv_quota_business ?? 9999,
+    };
     const limit = planLimits[plan] ?? 9999;
     const used = quota?.cv_generations_used ?? 0;
 
