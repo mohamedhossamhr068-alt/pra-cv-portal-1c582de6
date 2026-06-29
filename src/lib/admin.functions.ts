@@ -178,7 +178,7 @@ export const getTenantPricing = createServerFn({ method: "GET" })
     if (!prof?.tenant_id) return null;
     const { data } = await supabase
       .from("tenants")
-      .select("cv_credit_cost,match_credit_cost,scrape_credit_cost,currency,plan_price_free,plan_price_pro,plan_price_business,plan_credits_free,plan_credits_pro,plan_credits_business,bonus_credits")
+      .select("cv_credit_cost,match_credit_cost,scrape_credit_cost,currency,plan_price_free,plan_price_pro,plan_price_business,plan_credits_free,plan_credits_pro,plan_credits_business,bonus_credits,cv_quota_free,cv_quota_pro,cv_quota_business")
       .eq("id", prof.tenant_id)
       .maybeSingle();
     return data;
