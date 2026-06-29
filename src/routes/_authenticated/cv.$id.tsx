@@ -254,39 +254,32 @@ function CvViewer() {
     if (!pdfRef.current) return;
     setDownloading(true);
     try {
-      // Real text-based PDF via the browser's print engine — ATS-friendly,
-      // selectable text, perfect Arabic shaping (no html2canvas raster).
-      const node = pdfRef.current;
-      const win = window.open("", "_blank", "width=900,height=1200");
-      if (!win) throw new Error("popup-blocked");
-      const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-        .map((n) => n.outerHTML)
-        .join("\n");
-      const filename = `${data.title.replace(/[^\w\s\u0600-\u06FF-]/g, "").trim() || "cv"}.pdf`;
-      win.document.open();
-      win.document.write(`<!doctype html><html dir="${cvDir}" lang="${cvLang}"><head><meta charset="utf-8"><title>${filename.replace(/\.pdf$/, "")}</title>
-${styles}
-<style>
-  @page { size: A4; margin: 0; }
-  html, body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
-  body { font-family: ${cvLang === "ar" ? "'Noto Sans Arabic', 'Cairo', Inter, system-ui, sans-serif" : "Inter, system-ui, -apple-system, sans-serif"}; color: #0f172a; }
-  .cv-print-root { width: 210mm; min-height: 297mm; }
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  a { color: inherit; text-decoration: none; }
-</style>
-</head><body><div class="cv-print-root">${node.innerHTML}</div></body></html>`);
-      win.document.close();
-      await new Promise((r) => setTimeout(r, 700));
-      try { (win as any).focus(); } catch {}
-      win.print();
-      setTimeout(() => { try { win.close(); } catch {} }, 1500);
-    } catch (err: any) {
-      console.error("PDF export failed", err);
-      if (err?.message === "popup-blocked") {
-        toast.error(ar ? "يرجى السماح بالنوافذ المنبثقة لتصدير PDF" : "Please allow pop-ups to export the PDF.");
-      } else {
-        toast.error(ar ? "تعذر إنشاء PDF" : "Could not generate PDF.");
+      const html2canvas = (await import("html2canvas")).default;
+      const jsPDF = (await import("jspdf")).jsPDF;
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
       }
+      pdf.save(`${data.title || "cv"}.pdf`);
+    } catch (err) {
+      toast.error(ar ? "تعذر إنشاء PDF" : "Could not generate PDF.");
     } finally {
       setDownloading(false);
     }
