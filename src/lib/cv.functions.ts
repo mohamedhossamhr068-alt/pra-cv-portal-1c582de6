@@ -297,8 +297,8 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
       ? await supabase.from("subscriptions").select("plan").eq("tenant_id", tenantId).maybeSingle()
       : { data: null };
     const plan = (sub?.plan as string) ?? "free";
-    const planLimits: Record<string, number> = { free: 3, pro: 50, business: 9999 };
-    const limit = planLimits[plan] ?? 3;
+    const planLimits: Record<string, number> = { free: 9999, pro: 9999, business: 9999 };
+    const limit = planLimits[plan] ?? 9999;
 
     const monthKey = new Date().toISOString().slice(0, 7);
 

@@ -28,9 +28,9 @@ export const getMe = createServerFn({ method: "GET" })
       .eq("period_month", monthKey)
       .maybeSingle();
 
-    const planLimits: Record<string, number> = { free: 3, pro: 50, business: 9999 };
+    const planLimits: Record<string, number> = { free: 9999, pro: 9999, business: 9999 };
     const plan = subscription?.plan ?? "free";
-    const limit = planLimits[plan] ?? 3;
+    const limit = planLimits[plan] ?? 9999;
     const used = quota?.cv_generations_used ?? 0;
 
     return {
