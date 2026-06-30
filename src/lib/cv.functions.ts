@@ -79,7 +79,7 @@ const CvInputSchema = z.object({
 type CvInput = z.infer<typeof CvInputSchema>;
 type CvOutput = z.infer<typeof CvOutputSchema>;
 
-function extractJsonObject(text: string) {
+export function extractJsonObject(text: string) {
   const withoutFence = text.replace(/```(?:json)?/gi, "```").replace(/```/g, "").trim();
   const start = withoutFence.indexOf("{");
   const end = withoutFence.lastIndexOf("}");
@@ -92,7 +92,7 @@ function extractJsonObject(text: string) {
  * (e.g. missing/invalid OPENROUTER_API_KEY, rate limit), falls back to the
  * direct Gemini API before giving up.
  */
-async function generateTextWithFallback(opts: {
+export async function generateTextWithFallback(opts: {
   system: string;
   prompt: string;
   jsonMode?: boolean;
