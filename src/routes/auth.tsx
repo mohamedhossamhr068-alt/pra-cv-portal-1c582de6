@@ -11,7 +11,6 @@ import { ShieldCheck, Sparkles, Briefcase, Users, Loader2, AlertCircle } from "l
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable/index";
 
-
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
@@ -31,32 +30,34 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-function mapAuthError(t: (k: string) => string, msg: string | undefined, kind: "email" | "code"): string {
+function mapAuthError(t: (k: string) => string, msg: string | undefined): string {
   const m = (msg ?? "").toLowerCase();
-  if (!m) return kind === "email" ? t("auth.errEmailInvalid") : t("auth.errCodeInvalid");
+  if (!m) return t("auth.errEmailInvalid");
   if (m.includes("rate") || m.includes("too many") || m.includes("429")) return t("auth.errRate");
   if (m.includes("network") || m.includes("fetch") || m.includes("failed to fetch")) return t("auth.errNetwork");
-  if (kind === "code" && (m.includes("invalid") || m.includes("expired") || m.includes("otp") || m.includes("token")))
-    return t("auth.errCodeInvalid");
-  if (kind === "email" && (m.includes("invalid") || m.includes("email"))) return t("auth.errEmailInvalid");
+  if (m.includes("invalid login") || m.includes("invalid") || m.includes("credentials")) return t("auth.errEmailInvalid");
+  if (m.includes("user already registered") || m.includes("already registered")) return m;
   return msg ?? "";
 }
 
 function AuthPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"email" | "phone" | "password">("email");
-  const [step, setStep] = useState<"email" | "code">("email");
+  const ar = i18n.language === "ar";
+
+  const [tab, setTab] = useState<"signup" | "login">("signup");
+
+  // Shared
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [company, setCompany] = useState("");
-  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [codeError, setCodeError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+
+  // Sign-up only
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [company, setCompany] = useState("");
 
   const emailSchema = z
     .string()
@@ -65,62 +66,108 @@ function AuthPage() {
     .max(255, t("auth.errEmailTooLong"))
     .email(t("auth.errEmailInvalid"));
 
-  const phoneSchema = z
-    .string()
-    .trim()
-    .min(1, "رقم الهاتف مطلوب")
-    .regex(/^\+?[1-9]\d{7,14}$/, "رقم هاتف غير صالح (مثال: ‎+201001234567)");
+  const passwordSchema = z.string().min(8, t("auth.errPasswordShort")).max(128);
 
-  const codeSchema = z
-    .string()
-    .trim()
-    .min(1, t("auth.errCodeRequired"))
-    .regex(/^\d+$/, t("auth.errCodeDigits"))
-    .length(6, t("auth.errCodeShort"));
+  const googleSignIn = async () => {
+    setLoading(true);
+    setStatus(t("auth.statusSending"));
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/auth/callback",
+        extraParams: { prompt: "select_account" },
+      });
+      if (result.error) {
+        toast.error((result.error as any)?.message ?? "Google sign-in failed");
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Google sign-in failed");
+    } finally {
+      setLoading(false);
+      setStatus(null);
+    }
+  };
 
-  const passwordSignIn = async (e?: React.FormEvent) => {
+  const handleSignUp = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const ar = i18n.language === "ar";
-    setEmailError(null);
-    const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) {
-      setEmailError(parsed.error.issues[0]?.message ?? "");
+    setError(null);
+    const parsedEmail = emailSchema.safeParse(email);
+    if (!parsedEmail.success) {
+      setError(parsedEmail.error.issues[0]?.message ?? "");
       return;
     }
-    if (!password || password.length < 8) {
-      setEmailError(ar ? "كلمة المرور لازم 8 أحرف على الأقل" : "Password must be at least 8 characters");
+    const parsedPassword = passwordSchema.safeParse(password);
+    if (!parsedPassword.success) {
+      setError(parsedPassword.error.issues[0]?.message ?? "");
+      return;
+    }
+    if (!fullName.trim()) {
+      setError(t("auth.errNameRequired"));
+      return;
+    }
+    setLoading(true);
+    setStatus(t("auth.sending"));
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: parsedEmail.data,
+        password: parsedPassword.data,
+        options: {
+          emailRedirectTo: window.location.origin + "/pending-approval",
+          data: {
+            full_name: fullName.trim(),
+            phone: phone.trim() || undefined,
+            company_name: company.trim() || undefined,
+          },
+        },
+      });
+      if (signUpError) throw signUpError;
+      if (!data.session) {
+        toast.success(
+          ar
+            ? "تم إنشاء الحساب — تحقق من بريدك لتأكيده ثم سجل الدخول."
+            : "Account created — confirm your email then log in.",
+        );
+        setTab("login");
+        setPassword("");
+        return;
+      }
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      const friendly = mapAuthError(t, err?.message);
+      setError(friendly);
+      toast.error(friendly);
+    } finally {
+      setLoading(false);
+      setStatus(null);
+    }
+  };
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError(null);
+    const parsedEmail = emailSchema.safeParse(email);
+    if (!parsedEmail.success) {
+      setError(parsedEmail.error.issues[0]?.message ?? "");
+      return;
+    }
+    if (!password) {
+      setError(t("auth.errPasswordShort"));
       return;
     }
     setLoading(true);
     setStatus(ar ? "جارٍ التحقق…" : "Signing in…");
     try {
-      // Try sign-in first; if user doesn't exist, sign up.
-      const signIn = await supabase.auth.signInWithPassword({ email: parsed.data, password });
-      if (signIn.error) {
-        const msg = (signIn.error.message || "").toLowerCase();
-        if (msg.includes("invalid login") || msg.includes("invalid") || msg.includes("credentials")) {
-          // Attempt sign-up
-          const signUp = await supabase.auth.signUp({
-            email: parsed.data,
-            password,
-            options: {
-              emailRedirectTo: window.location.origin + "/pending-approval",
-              data: { full_name: fullName || undefined, company_name: company || undefined },
-            },
-          });
-          if (signUp.error) throw signUp.error;
-          if (!signUp.data.session) {
-            toast.success(ar ? "تم إنشاء الحساب — تحقق من بريدك لتأكيده ثم سجل الدخول." : "Account created — confirm your email then sign in.");
-            return;
-          }
-        } else {
-          throw signIn.error;
-        }
-      }
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: parsedEmail.data,
+        password,
+      });
+      if (signInError) throw signInError;
       navigate({ to: "/dashboard" });
     } catch (err: any) {
-      const friendly = mapAuthError(t, err?.message, "email");
-      setEmailError(friendly);
+      const friendly = mapAuthError(t, err?.message);
+      setError(friendly);
       toast.error(friendly);
     } finally {
       setLoading(false);
@@ -128,91 +175,10 @@ function AuthPage() {
     }
   };
 
-
-  const sendCode = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    setEmailError(null);
-    setLoading(true);
-    setStatus(t("auth.statusSending"));
-    try {
-      if (mode === "email") {
-        const parsed = emailSchema.safeParse(email);
-        if (!parsed.success) {
-          setEmailError(parsed.error.issues[0]?.message ?? t("auth.errEmailInvalid"));
-          setLoading(false);
-          setStatus(null);
-          return;
-        }
-        const { error } = await supabase.auth.signInWithOtp({
-          email: parsed.data,
-          options: {
-            shouldCreateUser: true,
-            emailRedirectTo: window.location.origin + "/pending-approval",
-            data: { full_name: fullName || undefined, company_name: company || undefined },
-          },
-        });
-        if (error) throw error;
-        toast.success(t("auth.codeSent", { email: parsed.data }));
-      } else {
-        const parsed = phoneSchema.safeParse(phone);
-        if (!parsed.success) {
-          setEmailError(parsed.error.issues[0]?.message ?? "رقم هاتف غير صالح");
-          setLoading(false);
-          setStatus(null);
-          return;
-        }
-        const { error } = await supabase.auth.signInWithOtp({
-          phone: parsed.data,
-          options: {
-            shouldCreateUser: true,
-            channel: "sms",
-            data: { full_name: fullName || undefined, company_name: company || undefined },
-          },
-        });
-        if (error) throw error;
-        toast.success(`تم إرسال الكود إلى ${parsed.data}`);
-      }
-      setStep("code");
-      setCode("");
-      setCodeError(null);
-    } catch (err: any) {
-      const friendly = mapAuthError(t, err?.message, "email");
-      setEmailError(friendly);
-      toast.error(friendly);
-    } finally {
-      setLoading(false);
-      setStatus(null);
-    }
+  const switchTab = (next: "signup" | "login") => {
+    setTab(next);
+    setError(null);
   };
-
-  const verifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCodeError(null);
-    const parsed = codeSchema.safeParse(code);
-    if (!parsed.success) {
-      setCodeError(parsed.error.issues[0]?.message ?? t("auth.errCodeInvalid"));
-      return;
-    }
-    setLoading(true);
-    setStatus(t("auth.statusVerifying"));
-    try {
-      const { error } = mode === "email"
-        ? await supabase.auth.verifyOtp({ email: email.trim(), token: parsed.data, type: "email" })
-        : await supabase.auth.verifyOtp({ phone: phone.trim(), token: parsed.data, type: "sms" });
-      if (error) throw error;
-      navigate({ to: "/dashboard" });
-    } catch (err: any) {
-      const friendly = mapAuthError(t, err?.message, "code");
-      setCodeError(friendly);
-      toast.error(friendly);
-    } finally {
-      setLoading(false);
-      setStatus(null);
-    }
-  };
-
-
-
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -233,10 +199,10 @@ function AuthPage() {
 
           <div className="space-y-4">
             <h1 className="text-4xl font-bold leading-tight tracking-tight">
-              {t("auth.signUpTitle")}
+              {tab === "signup" ? t("auth.signUpTitle") : t("auth.loginTitle")}
             </h1>
             <p className="max-w-md text-base text-white/80">
-              {t("auth.signUpSub")}
+              {tab === "signup" ? t("auth.signUpSub") : t("auth.loginSub")}
             </p>
           </div>
 
@@ -271,10 +237,10 @@ function AuthPage() {
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <CardTitle className="text-2xl tracking-tight">
-                {step === "email" ? t("auth.signUpTitle") : t("auth.enterCode")}
+                {tab === "signup" ? t("auth.signUpTitle") : t("auth.loginTitle")}
               </CardTitle>
               <CardDescription>
-                {step === "email" ? t("auth.signUpSub") : t("auth.codeSent", { email })}
+                {tab === "signup" ? t("auth.signUpSub") : t("auth.loginSub")}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -288,135 +254,108 @@ function AuthPage() {
                   <span>{status}</span>
                 </div>
               )}
-              {step === "email" ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 w-full"
-                    disabled={loading}
-                    onClick={async () => {
-                      setLoading(true);
-                      setStatus(t("auth.statusSending"));
-                      try {
-                        const result = await lovable.auth.signInWithOAuth("google", {
-                          redirect_uri: window.location.origin + "/auth/callback",
-                          extraParams: { prompt: "select_account" },
-                        });
-                        if (result.error) {
-                          toast.error((result.error as any)?.message ?? "Google sign-in failed");
-                          return;
-                        }
-                        if (result.redirected) return;
-                        navigate({ to: "/dashboard" });
-                      } catch (err: any) {
-                        toast.error(err?.message ?? "Google sign-in failed");
-                      } finally {
-                        setLoading(false);
-                        setStatus(null);
-                      }
-                    }}
-                  >
-                    {t("auth.google")}
-                  </Button>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <div className="h-px flex-1 bg-border" />
-                    {t("auth.or")}
-                    <div className="h-px flex-1 bg-border" />
-                  </div>
-                <form className="flex flex-col gap-3" onSubmit={mode === "password" ? passwordSignIn : sendCode} noValidate>
-                  <div className="grid grid-cols-3 gap-1 rounded-lg border bg-muted/30 p-1">
-                    <button
-                      type="button"
-                      onClick={() => { setMode("email"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "email" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      {t("auth.email")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setMode("password"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "password" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      كلمة المرور
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setMode("phone"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "phone" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      رقم الهاتف
-                    </button>
-                  </div>
 
+              <Button type="button" variant="outline" className="h-11 w-full" disabled={loading} onClick={googleSignIn}>
+                {t("auth.google")}
+              </Button>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                {t("auth.or")}
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              {/* Sign up / Log in toggle */}
+              <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/30 p-1">
+                <button
+                  type="button"
+                  onClick={() => switchTab("signup")}
+                  className={`h-9 rounded-md text-sm font-medium transition-colors ${
+                    tab === "signup" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("auth.tabSignUp")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchTab("login")}
+                  className={`h-9 rounded-md text-sm font-medium transition-colors ${
+                    tab === "login" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("auth.tabLogin")}
+                </button>
+              </div>
+
+              {tab === "signup" ? (
+                <form className="flex flex-col gap-3" onSubmit={handleSignUp} noValidate>
                   <div className="grid gap-1.5">
                     <Label htmlFor="fn">{t("auth.fullName")}</Label>
-                    <Input id="fn" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                    <Input
+                      id="fn"
+                      value={fullName}
+                      onChange={(e) => {
+                        setFullName(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      maxLength={100}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="em-su">{t("auth.email")}</Label>
+                    <Input
+                      id="em-su"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="you@company.com"
+                      autoComplete="email"
+                      maxLength={255}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="ph">{t("auth.phoneOptional")}</Label>
+                    <Input
+                      id="ph"
+                      type="tel"
+                      dir="ltr"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+201001234567"
+                      autoComplete="tel"
+                      maxLength={20}
+                    />
                   </div>
                   <div className="grid gap-1.5">
                     <Label htmlFor="co">{t("auth.company")}</Label>
                     <Input id="co" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={120} />
                   </div>
-                  {mode === "phone" ? (
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="ph">رقم الهاتف</Label>
-                      <Input
-                        id="ph"
-                        type="tel"
-                        dir="ltr"
-                        value={phone}
-                        onChange={(e) => { setPhone(e.target.value); if (emailError) setEmailError(null); }}
-                        placeholder="+201001234567"
-                        autoComplete="tel"
-                        maxLength={20}
-                        aria-invalid={!!emailError}
-                        className={emailError ? "border-destructive focus-visible:ring-destructive/40" : undefined}
-                        required
-                      />
-                      <p className="text-[11px] text-muted-foreground">أدخل الرقم بصيغة دولية تبدأ بـ + ومفتاح الدولة</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="grid gap-1.5">
-                        <Label htmlFor="em">{t("auth.email")}</Label>
-                        <Input
-                          id="em"
-                          type="email"
-                          value={email}
-                          onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
-                          placeholder="you@company.com"
-                          autoComplete="email"
-                          maxLength={255}
-                          aria-invalid={!!emailError}
-                          className={emailError ? "border-destructive focus-visible:ring-destructive/40" : undefined}
-                          required
-                        />
-                      </div>
-                      {mode === "password" && (
-                        <div className="grid gap-1.5">
-                          <Label htmlFor="pw">كلمة المرور</Label>
-                          <Input
-                            id="pw"
-                            type="password"
-                            value={password}
-                            onChange={(e) => { setPassword(e.target.value); if (emailError) setEmailError(null); }}
-                            placeholder="••••••••"
-                            autoComplete="current-password"
-                            minLength={8}
-                            maxLength={128}
-                            required
-                          />
-                          <p className="text-[11px] text-muted-foreground">
-                            إذا لم يكن لديك حساب، سيتم إنشاؤه تلقائياً.
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {emailError && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="pw-su">{t("auth.password")}</Label>
+                    <Input
+                      id="pw-su"
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      minLength={8}
+                      maxLength={128}
+                      required
+                    />
+                  </div>
+
+                  {error && (
                     <p className="flex items-start gap-1.5 text-xs text-destructive">
                       <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span>{emailError}</span>
+                      <span>{error}</span>
                     </p>
                   )}
 
@@ -426,82 +365,68 @@ function AuthPage() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         {t("auth.sending")}
                       </>
-                    ) : mode === "password" ? (
-                      "دخول / إنشاء حساب"
                     ) : (
-                      t("auth.sendCode")
+                      t("auth.createAccount")
                     )}
                   </Button>
-                  <p className="text-center text-xs text-muted-foreground">
-                    {t("auth.awaitingApproval")}
-                  </p>
+                  <p className="text-center text-xs text-muted-foreground">{t("auth.awaitingApproval")}</p>
                 </form>
-                </>
               ) : (
-
-                <form className="flex flex-col gap-3" onSubmit={verifyCode} noValidate>
+                <form className="flex flex-col gap-3" onSubmit={handleLogin} noValidate>
                   <div className="grid gap-1.5">
-                    <Label htmlFor="code">{t("auth.enterCode")}</Label>
+                    <Label htmlFor="em-li">{t("auth.email")}</Label>
                     <Input
-                      id="code"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      value={code}
+                      id="em-li"
+                      type="email"
+                      value={email}
                       onChange={(e) => {
-                        setCode(e.target.value.replace(/\D/g, ""));
-                        if (codeError) setCodeError(null);
+                        setEmail(e.target.value);
+                        if (error) setError(null);
                       }}
-                      placeholder="••••••"
-                      className={`h-12 text-center text-2xl tracking-[0.5em] ${
-                        codeError ? "border-destructive focus-visible:ring-destructive/40" : ""
-                      }`}
-                      aria-invalid={!!codeError}
-                      aria-describedby={codeError ? "code-err" : undefined}
+                      placeholder="you@company.com"
+                      autoComplete="email"
+                      maxLength={255}
                       required
                     />
-                    {codeError && (
-                      <p id="code-err" className="flex items-start gap-1.5 text-xs text-destructive">
-                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span>{codeError}</span>
-                      </p>
-                    )}
                   </div>
-                  <Button type="submit" disabled={loading} className="h-11">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="pw-li">{t("auth.password")}</Label>
+                    <Input
+                      id="pw-li"
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      minLength={8}
+                      maxLength={128}
+                      required
+                    />
+                  </div>
+
+                  {error && (
+                    <p className="flex items-start gap-1.5 text-xs text-destructive">
+                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>{error}</span>
+                    </p>
+                  )}
+
+                  <Button type="submit" disabled={loading} className="mt-2 h-11">
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t("auth.verifying")}
+                        {t("auth.sending")}
                       </>
                     ) : (
-                      t("auth.verify")
+                      t("auth.logIn")
                     )}
                   </Button>
-                  <div className="flex justify-between text-xs">
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-50"
-                      onClick={() => {
-                        setStep("email");
-                        setCodeError(null);
-                      }}
-                      disabled={loading}
-                    >
-                      ← {t("auth.changeEmail")}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-primary hover:underline disabled:opacity-50"
-                      onClick={() => sendCode()}
-                      disabled={loading}
-                    >
-                      {t("auth.resend")}
-                    </button>
-                  </div>
                 </form>
               )}
             </CardContent>
-
           </Card>
         </div>
       </div>

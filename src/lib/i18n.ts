@@ -75,6 +75,16 @@ const en = {
     errNetwork: "Network error. Check your connection and try again.",
     statusSending: "Sending the verification code to your email…",
     statusVerifying: "Verifying your code…",
+    tabSignUp: "Sign up",
+    tabLogin: "Log in",
+    phone: "Phone number",
+    phoneOptional: "Phone number (optional)",
+    loginTitle: "Welcome back",
+    loginSub: "Log in with your email and password.",
+    createAccount: "Create account",
+    logIn: "Log in",
+    errPasswordShort: "Password must be at least 8 characters.",
+    errNameRequired: "Full name is required.",
 
   },
   dashboard: {
@@ -419,6 +429,16 @@ const ar: typeof en = {
     errNetwork: "خطأ في الاتصال. تحقق من الشبكة وحاول مجدداً.",
     statusSending: "جارٍ إرسال كود التحقق إلى بريدك…",
     statusVerifying: "جارٍ التحقق من الكود…",
+    tabSignUp: "تسجيل جديد",
+    tabLogin: "تسجيل الدخول",
+    phone: "رقم الهاتف",
+    phoneOptional: "رقم الهاتف (اختياري)",
+    loginTitle: "أهلاً بعودتك",
+    loginSub: "سجّل الدخول باستخدام بريدك الإلكتروني وكلمة المرور.",
+    createAccount: "إنشاء حساب",
+    logIn: "تسجيل الدخول",
+    errPasswordShort: "كلمة المرور يجب أن تكون 8 أحرف على الأقل.",
+    errNameRequired: "الاسم الكامل مطلوب.",
 
   },
   dashboard: {
