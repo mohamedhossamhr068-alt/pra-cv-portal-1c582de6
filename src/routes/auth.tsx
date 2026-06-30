@@ -127,7 +127,6 @@ function AuthPage() {
     }
   };
 
-  const ar = i18n.language === "ar";
 
   const sendCode = async (e?: React.FormEvent) => {
     e?.preventDefault();
