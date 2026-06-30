@@ -41,6 +41,7 @@ import { Route as AuthenticatedAdminBrandingRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
 import { Route as AuthenticatedAdminAccessRouteImport } from './routes/_authenticated/admin.access'
+import { Route as ApiPublicCronScrapeEgyptJobsRouteImport } from './routes/api/public/cron/scrape-egypt-jobs'
 import { Route as AuthenticatedAdminChatSupportRouteImport } from './routes/_authenticated/admin.chat.support'
 import { Route as AuthenticatedAdminChatGuestsRouteImport } from './routes/_authenticated/admin.chat.guests'
 import { Route as AuthenticatedAdminChatCreditRouteImport } from './routes/_authenticated/admin.chat.credit'
@@ -217,6 +218,12 @@ const AuthenticatedAdminAccessRoute =
     path: '/admin/access',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronScrapeEgyptJobsRoute =
+  ApiPublicCronScrapeEgyptJobsRouteImport.update({
+    id: '/api/public/cron/scrape-egypt-jobs',
+    path: '/api/public/cron/scrape-egypt-jobs',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminChatSupportRoute =
   AuthenticatedAdminChatSupportRouteImport.update({
     id: '/admin/chat/support',
@@ -271,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/admin/chat/credit': typeof AuthenticatedAdminChatCreditRoute
   '/admin/chat/guests': typeof AuthenticatedAdminChatGuestsRoute
   '/admin/chat/support': typeof AuthenticatedAdminChatSupportRoute
+  '/api/public/cron/scrape-egypt-jobs': typeof ApiPublicCronScrapeEgyptJobsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -306,6 +314,7 @@ export interface FileRoutesByTo {
   '/admin/chat/credit': typeof AuthenticatedAdminChatCreditRoute
   '/admin/chat/guests': typeof AuthenticatedAdminChatGuestsRoute
   '/admin/chat/support': typeof AuthenticatedAdminChatSupportRoute
+  '/api/public/cron/scrape-egypt-jobs': typeof ApiPublicCronScrapeEgyptJobsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -344,6 +353,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/chat/credit': typeof AuthenticatedAdminChatCreditRoute
   '/_authenticated/admin/chat/guests': typeof AuthenticatedAdminChatGuestsRoute
   '/_authenticated/admin/chat/support': typeof AuthenticatedAdminChatSupportRoute
+  '/api/public/cron/scrape-egypt-jobs': typeof ApiPublicCronScrapeEgyptJobsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -382,6 +392,7 @@ export interface FileRouteTypes {
     | '/admin/chat/credit'
     | '/admin/chat/guests'
     | '/admin/chat/support'
+    | '/api/public/cron/scrape-egypt-jobs'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -417,6 +428,7 @@ export interface FileRouteTypes {
     | '/admin/chat/credit'
     | '/admin/chat/guests'
     | '/admin/chat/support'
+    | '/api/public/cron/scrape-egypt-jobs'
   id:
     | '__root__'
     | '/'
@@ -454,6 +466,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/chat/credit'
     | '/_authenticated/admin/chat/guests'
     | '/_authenticated/admin/chat/support'
+    | '/api/public/cron/scrape-egypt-jobs'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -463,6 +476,7 @@ export interface RootRouteChildren {
   PendingApprovalRoute: typeof PendingApprovalRoute
   PricingRoute: typeof PricingRoute
   ApiPublicGuestChatRoute: typeof ApiPublicGuestChatRoute
+  ApiPublicCronScrapeEgyptJobsRoute: typeof ApiPublicCronScrapeEgyptJobsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -691,6 +705,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAccessRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/scrape-egypt-jobs': {
+      id: '/api/public/cron/scrape-egypt-jobs'
+      path: '/api/public/cron/scrape-egypt-jobs'
+      fullPath: '/api/public/cron/scrape-egypt-jobs'
+      preLoaderRoute: typeof ApiPublicCronScrapeEgyptJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/chat/support': {
       id: '/_authenticated/admin/chat/support'
       path: '/admin/chat/support'
@@ -806,6 +827,7 @@ const rootRouteChildren: RootRouteChildren = {
   PendingApprovalRoute: PendingApprovalRoute,
   PricingRoute: PricingRoute,
   ApiPublicGuestChatRoute: ApiPublicGuestChatRoute,
+  ApiPublicCronScrapeEgyptJobsRoute: ApiPublicCronScrapeEgyptJobsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

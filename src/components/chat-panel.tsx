@@ -87,7 +87,7 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
       await sendFn({ data: { conversation_id: conversationId, body: text.trim() } });
       setText("");
       qc.invalidateQueries({ queryKey: ["chat-messages", conversationId] });
-      if (triggerBot && kind === "support") {
+      if (triggerBot) {
         try {
           const result = await botFn({ data: { conversation_id: conversationId, lang: i18n.language } });
           if (!result?.ok) {
@@ -104,6 +104,7 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
               : "Couldn't get a reply from the assistant right now. A human moderator will follow up.",
           );
         }
+      }
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");

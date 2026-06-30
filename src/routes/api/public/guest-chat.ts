@@ -68,9 +68,9 @@ export const Route = createFileRoute("/api/public/guest-chat")({
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", conv.id);
 
-        // bot reply if enabled and no human has taken over
+        // Bot ALWAYS replies — no human-takeover gate.
         let botReply: string | null = null;
-        if (conv.bot_enabled) {
+        {
           if (process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY) {
             try {
               const { data: history } = await supabaseAdmin

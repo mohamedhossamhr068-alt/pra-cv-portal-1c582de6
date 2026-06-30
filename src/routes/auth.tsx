@@ -43,12 +43,13 @@ function mapAuthError(t: (k: string) => string, msg: string | undefined, kind: "
 }
 
 function AuthPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"email" | "phone">("email");
+  const [mode, setMode] = useState<"email" | "phone" | "password">("email");
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [code, setCode] = useState("");
@@ -76,6 +77,57 @@ function AuthPage() {
     .min(1, t("auth.errCodeRequired"))
     .regex(/^\d+$/, t("auth.errCodeDigits"))
     .length(6, t("auth.errCodeShort"));
+
+  const passwordSignIn = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const ar = i18n.language === "ar";
+    setEmailError(null);
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      setEmailError(parsed.error.issues[0]?.message ?? "");
+      return;
+    }
+    if (!password || password.length < 8) {
+      setEmailError(ar ? "كلمة المرور لازم 8 أحرف على الأقل" : "Password must be at least 8 characters");
+      return;
+    }
+    setLoading(true);
+    setStatus(ar ? "جارٍ التحقق…" : "Signing in…");
+    try {
+      // Try sign-in first; if user doesn't exist, sign up.
+      const signIn = await supabase.auth.signInWithPassword({ email: parsed.data, password });
+      if (signIn.error) {
+        const msg = (signIn.error.message || "").toLowerCase();
+        if (msg.includes("invalid login") || msg.includes("invalid") || msg.includes("credentials")) {
+          // Attempt sign-up
+          const signUp = await supabase.auth.signUp({
+            email: parsed.data,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin + "/pending-approval",
+              data: { full_name: fullName || undefined, company_name: company || undefined },
+            },
+          });
+          if (signUp.error) throw signUp.error;
+          if (!signUp.data.session) {
+            toast.success(ar ? "تم إنشاء الحساب — تحقق من بريدك لتأكيده ثم سجل الدخول." : "Account created — confirm your email then sign in.");
+            return;
+          }
+        } else {
+          throw signIn.error;
+        }
+      }
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      const friendly = mapAuthError(t, err?.message, "email");
+      setEmailError(friendly);
+      toast.error(friendly);
+    } finally {
+      setLoading(false);
+      setStatus(null);
+    }
+  };
+
 
   const sendCode = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -272,19 +324,26 @@ function AuthPage() {
                     {t("auth.or")}
                     <div className="h-px flex-1 bg-border" />
                   </div>
-                <form className="flex flex-col gap-3" onSubmit={sendCode} noValidate>
-                  <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/30 p-1">
+                <form className="flex flex-col gap-3" onSubmit={mode === "password" ? passwordSignIn : sendCode} noValidate>
+                  <div className="grid grid-cols-3 gap-1 rounded-lg border bg-muted/30 p-1">
                     <button
                       type="button"
                       onClick={() => { setMode("email"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-sm font-medium transition-colors ${mode === "email" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "email" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       {t("auth.email")}
                     </button>
                     <button
                       type="button"
+                      onClick={() => { setMode("password"); setEmailError(null); }}
+                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "password" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      كلمة المرور
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => { setMode("phone"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-sm font-medium transition-colors ${mode === "phone" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "phone" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       رقم الهاتف
                     </button>
@@ -298,23 +357,7 @@ function AuthPage() {
                     <Label htmlFor="co">{t("auth.company")}</Label>
                     <Input id="co" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={120} />
                   </div>
-                  {mode === "email" ? (
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="em">{t("auth.email")}</Label>
-                      <Input
-                        id="em"
-                        type="email"
-                        value={email}
-                        onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
-                        placeholder="you@company.com"
-                        autoComplete="email"
-                        maxLength={255}
-                        aria-invalid={!!emailError}
-                        className={emailError ? "border-destructive focus-visible:ring-destructive/40" : undefined}
-                        required
-                      />
-                    </div>
-                  ) : (
+                  {mode === "phone" ? (
                     <div className="grid gap-1.5">
                       <Label htmlFor="ph">رقم الهاتف</Label>
                       <Input
@@ -332,6 +375,43 @@ function AuthPage() {
                       />
                       <p className="text-[11px] text-muted-foreground">أدخل الرقم بصيغة دولية تبدأ بـ + ومفتاح الدولة</p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="em">{t("auth.email")}</Label>
+                        <Input
+                          id="em"
+                          type="email"
+                          value={email}
+                          onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
+                          placeholder="you@company.com"
+                          autoComplete="email"
+                          maxLength={255}
+                          aria-invalid={!!emailError}
+                          className={emailError ? "border-destructive focus-visible:ring-destructive/40" : undefined}
+                          required
+                        />
+                      </div>
+                      {mode === "password" && (
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="pw">كلمة المرور</Label>
+                          <Input
+                            id="pw"
+                            type="password"
+                            value={password}
+                            onChange={(e) => { setPassword(e.target.value); if (emailError) setEmailError(null); }}
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            minLength={8}
+                            maxLength={128}
+                            required
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            إذا لم يكن لديك حساب، سيتم إنشاؤه تلقائياً.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                   {emailError && (
                     <p className="flex items-start gap-1.5 text-xs text-destructive">
@@ -346,6 +426,8 @@ function AuthPage() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         {t("auth.sending")}
                       </>
+                    ) : mode === "password" ? (
+                      "دخول / إنشاء حساب"
                     ) : (
                       t("auth.sendCode")
                     )}
