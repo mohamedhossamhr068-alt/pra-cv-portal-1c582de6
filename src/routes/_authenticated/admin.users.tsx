@@ -186,6 +186,19 @@ function UserRow({ user, meId, onUpdate, pending, t }: { user: any; meId?: strin
             <KeyRound className="h-3.5 w-3.5" /> {t("admin.manageRole")} · {roleLabel}
           </Button>
 
+          <Button size="sm" variant="outline" onClick={() => {
+            const pwd = window.prompt(t("admin.newPasswordPrompt") || "كلمة المرور الجديدة (8 أحرف على الأقل)");
+            if (!pwd || pwd.length < 8) return;
+            import("@/lib/admin-auth.functions").then(async ({ adminSetUserPassword }) => {
+              try {
+                await adminSetUserPassword({ data: { target_user: user.id, new_password: pwd } });
+                toast.success(t("admin.passwordReset") || "تم إعادة تعيين كلمة المرور");
+              } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+            });
+          }} className="gap-1.5">
+            <KeyRound className="h-3.5 w-3.5" /> {t("admin.resetPassword") || "إعادة كلمة المرور"}
+          </Button>
+
           <Button
             size="sm"
             variant={user.is_blocked ? "default" : "destructive"}
