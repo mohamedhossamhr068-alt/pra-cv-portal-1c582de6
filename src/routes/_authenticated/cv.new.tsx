@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Sparkles, Upload, X } from "lucide-react";
+import { Sparkles, Upload, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cv/new")({
   component: NewCv,
@@ -54,7 +54,38 @@ function NewCv() {
     email: "",
     phone: "",
     location: "",
+    birthDate: "",
+    maritalStatus: "",
+    recruitmentStatus: "",
   });
+
+  type Company = {
+    name: string;
+    role: string;
+    startDate: string;
+    endDate: string;
+    current: boolean;
+    description: string;
+  };
+  const emptyCompany = (): Company => ({
+    name: "",
+    role: "",
+    startDate: "",
+    endDate: "",
+    current: false,
+    description: "",
+  });
+  const [companies, setCompanies] = useState<Company[]>([emptyCompany()]);
+
+  function updateCompany(index: number, patch: Partial<Company>) {
+    setCompanies((cs) => cs.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+  }
+  function addCompany() {
+    setCompanies((cs) => [...cs, emptyCompany()]);
+  }
+  function removeCompany(index: number) {
+    setCompanies((cs) => (cs.length > 1 ? cs.filter((_, i) => i !== index) : cs));
+  }
 
   function onPickAvatar(file: File) {
     if (file.size > 300_000) return toast.error(ar ? "الصورة كبيرة (حد أقصى 300KB)" : "Image too large (max 300KB)");
@@ -69,6 +100,16 @@ function NewCv() {
         data: {
           ...form,
           yearsExperience: form.yearsExperience ? Number(form.yearsExperience) : undefined,
+          companies: companies
+            .filter((c) => c.name.trim() || c.role.trim())
+            .map((c) => ({
+              name: c.name.trim(),
+              role: c.role.trim(),
+              startDate: c.startDate.trim() || undefined,
+              endDate: c.current ? undefined : c.endDate.trim() || undefined,
+              current: c.current,
+              description: c.description.trim() || undefined,
+            })),
           locale: ar ? "ar" : "en",
         } as any,
       }),
@@ -79,11 +120,12 @@ function NewCv() {
     onError: (e: any) => toast.error(e?.message || "Failed"),
   });
 
+  const hasValidCompany = companies.some((c) => c.name.trim() && c.role.trim());
   const canSubmit =
     form.fullName.trim() &&
     form.jobTitle.trim() &&
     form.industry.trim() &&
-    form.experience.trim().length >= 20 &&
+    (hasValidCompany || form.experience.trim().length >= 20) &&
     form.skills.trim();
 
   return (
@@ -184,14 +226,116 @@ function NewCv() {
             <Label>{ar ? "العنوان" : "Location"}</Label>
             <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
           </div>
-
+          <div>
+            <Label>{ar ? "تاريخ الميلاد" : "Date of birth"}</Label>
+            <Input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
+          </div>
+          <div>
+            <Label>{ar ? "الحالة الاجتماعية" : "Marital status"}</Label>
+            <Select value={form.maritalStatus} onValueChange={(v) => setForm({ ...form, maritalStatus: v })}>
+              <SelectTrigger><SelectValue placeholder={ar ? "اختر" : "Select"} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="single">{ar ? "أعزب" : "Single"}</SelectItem>
+                <SelectItem value="married">{ar ? "متزوج" : "Married"}</SelectItem>
+                <SelectItem value="engaged">{ar ? "مخطوب" : "Engaged"}</SelectItem>
+                <SelectItem value="divorced">{ar ? "مطلق" : "Divorced"}</SelectItem>
+                <SelectItem value="widowed">{ar ? "أرمل" : "Widowed"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="sm:col-span-2">
-            <Label>{ar ? "الخبرات (شركة - دور - فترة - نقاط)" : "Experience (company - role - period - bullets)"} *</Label>
+            <Label>{ar ? "موقف التجنيد" : "Recruitment / military status"}</Label>
+            <Select value={form.recruitmentStatus} onValueChange={(v) => setForm({ ...form, recruitmentStatus: v })}>
+              <SelectTrigger><SelectValue placeholder={ar ? "اختر" : "Select"} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="exempted">{ar ? "معفى" : "Exempted"}</SelectItem>
+                <SelectItem value="completed">{ar ? "أدى الخدمة" : "Completed service"}</SelectItem>
+                <SelectItem value="postponed">{ar ? "مؤجل" : "Postponed"}</SelectItem>
+                <SelectItem value="exempted_only_son">{ar ? "إعفاء (ابن وحيد)" : "Exempted — only son"}</SelectItem>
+                <SelectItem value="not_applicable">{ar ? "غير منطبق" : "Not applicable"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="sm:col-span-2 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <Label>{ar ? "الشركات التي عملت بها" : "Companies you've worked at"} *</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addCompany}>
+                {ar ? "+ إضافة شركة" : "+ Add company"}
+              </Button>
+            </div>
+            {companies.map((c, i) => (
+              <Card key={i} className="border-dashed">
+                <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {ar ? `شركة ${i + 1}` : `Company ${i + 1}`}
+                    </span>
+                    {companies.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeCompany(i)}
+                        className="text-xs text-destructive hover:underline"
+                      >
+                        {ar ? "إزالة" : "Remove"}
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <Label>{ar ? "اسم الشركة" : "Company name"}</Label>
+                    <Input value={c.name} onChange={(e) => updateCompany(i, { name: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>{ar ? "المسمى الوظيفي هناك" : "Role / title there"}</Label>
+                    <Input value={c.role} onChange={(e) => updateCompany(i, { role: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>{ar ? "تاريخ البداية" : "Start date"}</Label>
+                    <Input
+                      type="month"
+                      value={c.startDate}
+                      onChange={(e) => updateCompany(i, { startDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{ar ? "تاريخ النهاية" : "End date"}</Label>
+                    <Input
+                      type="month"
+                      value={c.endDate}
+                      disabled={c.current}
+                      onChange={(e) => updateCompany(i, { endDate: e.target.value })}
+                    />
+                    <label className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={c.current}
+                        onChange={(e) => updateCompany(i, { current: e.target.checked, endDate: "" })}
+                      />
+                      {ar ? "أعمل هنا حالياً" : "I currently work here"}
+                    </label>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>{ar ? "وصف المهام والإنجازات" : "Responsibilities & achievements"}</Label>
+                    <Textarea
+                      rows={3}
+                      value={c.description}
+                      onChange={(e) => updateCompany(i, { description: e.target.value })}
+                      placeholder={ar ? "اوصف مهامك وإنجازاتك في هذا الدور" : "Describe your duties and achievements in this role"}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              {ar
+                ? "أو، إذا كنت تفضل، يمكنك وصف خبراتك كنص حر بدلاً من ذلك:"
+                : "Or, if you prefer, describe your experience as free text instead:"}
+            </p>
             <Textarea
-              rows={6}
+              rows={4}
               value={form.experience}
               onChange={(e) => setForm({ ...form, experience: e.target.value })}
-              placeholder={ar ? "اكتب خبراتك بالتفصيل (20 حرف على الأقل)" : "Describe your experience (min 20 chars)"}
+              placeholder={ar ? "اختياري إذا أضفت شركة واحدة على الأقل أعلاه" : "Optional if you added at least one company above"}
             />
           </div>
           <div className="sm:col-span-2">
@@ -231,15 +375,32 @@ function NewCv() {
             </Select>
           </div>
 
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 flex flex-col gap-2">
             <Button
               onClick={() => mut.mutate()}
               disabled={!canSubmit || mut.isPending}
               className="w-full"
             >
-              {mut.isPending ? (ar ? "جاري الإنشاء..." : "Generating...") : (ar ? "إنشاء السي في" : "Generate CV")}
+              {mut.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {ar ? "جاري الإنشاء…" : "Generating…"}
+                </>
+              ) : ar ? (
+                "إنشاء السي في"
+              ) : (
+                "Generate CV"
+              )}
             </Button>
+            {mut.isPending && (
+              <p className="text-center text-xs text-muted-foreground">
+                {ar
+                  ? "قد يستغرق هذا حتى دقيقة. من فضلك لا تغلق الصفحة أو تحدّثها."
+                  : "This can take up to a minute. Please don't close or refresh the page."}
+              </p>
+            )}
           </div>
+
         </CardContent>
       </Card>
     </div>

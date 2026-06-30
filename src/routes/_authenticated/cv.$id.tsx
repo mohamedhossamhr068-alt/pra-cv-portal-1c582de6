@@ -208,7 +208,12 @@ function CvViewer() {
   const fn = useServerFn(getCv);
   const saveStyleFn = useServerFn(updateCvStyle);
   const translateFn = useServerFn(translateCv);
-  const { data, isLoading } = useQuery({ queryKey: ["cv", id], queryFn: () => fn({ data: { id } }) });
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["cv", id],
+    queryFn: () => fn({ data: { id } }),
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+  });
   const me = useMeQuery();
   const tenant = me.data?.tenant;
   const pdfRef = useRef<HTMLDivElement>(null);
@@ -241,6 +246,19 @@ function CvViewer() {
     return () => clearTimeout(t);
   }, [selectedTemplate, selectedAccent, data, id, saveStyleFn]);
 
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <p className="text-sm text-destructive">
+          {ar ? "حدث خطأ أثناء تحميل السيرة الذاتية." : "Something went wrong loading this CV."}
+        </p>
+        <p className="text-xs text-muted-foreground">{(error as any)?.message ?? ""}</p>
+        <Button onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? (ar ? "جارٍ المحاولة…" : "Retrying…") : ar ? "إعادة المحاولة" : "Retry"}
+        </Button>
+      </div>
+    );
+  }
   if (isLoading || !data || !out) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
 
   const baseAnalysis = (data as any).analysis as CvAnalysis | null;

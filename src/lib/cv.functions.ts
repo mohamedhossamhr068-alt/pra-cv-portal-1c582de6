@@ -25,12 +25,22 @@ const LanguageSchema = z.object({
   level: z.string().min(1).max(30),
 });
 
+const CompanySchema = z.object({
+  name: z.string().min(1).max(120),
+  role: z.string().min(1).max(120),
+  startDate: z.string().max(40).optional(),
+  endDate: z.string().max(40).optional(),
+  current: z.boolean().optional(),
+  description: z.string().max(2000).optional(),
+});
+
 const CvInputSchema = z.object({
   fullName: z.string().min(1).max(120),
   jobTitle: z.string().min(1).max(120),
   industry: z.string().min(1).max(80),
   seniority: z.enum(["junior", "mid", "senior", "lead"]),
-  experience: z.string().min(20).max(4000),
+  experience: z.string().max(4000).optional().default(""),
+  companies: z.array(CompanySchema).max(15).optional(),
   skills: z.string().min(1).max(1000),
   template: z.enum([
     "ats_clean",
@@ -59,7 +69,11 @@ const CvInputSchema = z.object({
   portfolioUrl: z.string().max(200).optional(),
   birthDate: z.string().max(40).optional(),
   maritalStatus: z.string().max(40).optional(),
-});
+  recruitmentStatus: z.string().max(60).optional(),
+}).refine(
+  (d) => (d.companies && d.companies.length > 0) || (d.experience && d.experience.trim().length >= 20),
+  { message: "Add at least one company, or describe your experience (min 20 characters).", path: ["experience"] },
+);
 
 
 type CvInput = z.infer<typeof CvInputSchema>;
@@ -364,6 +378,17 @@ async function generateCvInner({ data, context }: { data: CvInput; context: any 
 
     let cvOutput: CvOutput;
     try {
+      const companiesBlock =
+        data.companies && data.companies.length > 0
+          ? data.companies
+              .map((c, i) => {
+                const period = c.current
+                  ? `${c.startDate || "Not specified"} — Present`
+                  : `${c.startDate || "Not specified"} — ${c.endDate || "Not specified"}`;
+                return `Company ${i + 1}: ${c.name}\nRole: ${c.role}\nPeriod: ${period}\nDescription: ${c.description || "Not provided"}`;
+              })
+              .join("\n\n")
+          : `Experience (raw — companies, dates, responsibilities described by candidate):\n${data.experience}`;
       const text = await generateTextWithFallback({
         maxOutputTokens: 8192,
         jsonMode: true,
@@ -388,11 +413,11 @@ LinkedIn: ${data.linkedinUrl || "not provided"}
 Portfolio: ${data.portfolioUrl || "not provided"}
 Date of birth: ${data.birthDate || "not provided"}
 Marital status: ${data.maritalStatus || "not provided"}
+Recruitment / job-seeking status: ${data.recruitmentStatus || "not provided"}
 Skills (raw): ${data.skills}
-Experience (raw — companies, dates, responsibilities described by candidate):
-${data.experience}
+${companiesBlock}
 
-IMPORTANT: From the "Experience (raw)" text, extract each distinct company/employer the candidate mentions and create one entry per company in the "experience" array, populating "role", "company", and "dates" exactly as the candidate wrote them. Never merge multiple jobs into one entry. If dates are missing for a job, write "Not specified" — do NOT invent dates.
+IMPORTANT: Create one entry per company/employer listed above in the "experience" array, populating "role", "company", and "dates" exactly as provided. Never merge multiple jobs into one entry. If dates are missing for a job, write "Not specified" — do NOT invent dates.
 
 Produce an ATS-optimized CV with exactly these JSON keys:
 {
