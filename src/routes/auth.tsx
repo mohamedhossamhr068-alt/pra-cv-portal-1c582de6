@@ -78,6 +78,57 @@ function AuthPage() {
     .regex(/^\d+$/, t("auth.errCodeDigits"))
     .length(6, t("auth.errCodeShort"));
 
+  const passwordSignIn = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setEmailError(null);
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      setEmailError(parsed.error.issues[0]?.message ?? "");
+      return;
+    }
+    if (!password || password.length < 8) {
+      setEmailError(ar ? "كلمة المرور لازم 8 أحرف على الأقل" : "Password must be at least 8 characters");
+      return;
+    }
+    setLoading(true);
+    setStatus(ar ? "جارٍ التحقق…" : "Signing in…");
+    try {
+      // Try sign-in first; if user doesn't exist, sign up.
+      const signIn = await supabase.auth.signInWithPassword({ email: parsed.data, password });
+      if (signIn.error) {
+        const msg = (signIn.error.message || "").toLowerCase();
+        if (msg.includes("invalid login") || msg.includes("invalid") || msg.includes("credentials")) {
+          // Attempt sign-up
+          const signUp = await supabase.auth.signUp({
+            email: parsed.data,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin + "/pending-approval",
+              data: { full_name: fullName || undefined, company_name: company || undefined },
+            },
+          });
+          if (signUp.error) throw signUp.error;
+          if (!signUp.data.session) {
+            toast.success(ar ? "تم إنشاء الحساب — تحقق من بريدك لتأكيده ثم سجل الدخول." : "Account created — confirm your email then sign in.");
+            return;
+          }
+        } else {
+          throw signIn.error;
+        }
+      }
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      const friendly = mapAuthError(t, err?.message, "email");
+      setEmailError(friendly);
+      toast.error(friendly);
+    } finally {
+      setLoading(false);
+      setStatus(null);
+    }
+  };
+
+  const ar = i18n.language === "ar";
+
   const sendCode = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setEmailError(null);
