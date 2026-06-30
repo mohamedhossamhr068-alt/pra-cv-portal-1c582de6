@@ -43,15 +43,12 @@ export const triggerSupportBotReply = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conv } = await supabaseAdmin
       .from("conversations" as any)
-      .select("id, kind, bot_enabled, human_replied, owner_id, tenant_id")
+      .select("id, kind, owner_id, tenant_id")
       .eq("id", data.conversation_id)
       .maybeSingle();
     if (!conv) return { ok: false, reason: "not_found" };
     const c = conv as any;
-    if (c.kind !== "support" || !c.bot_enabled) {
-      return { ok: false, reason: "disabled" };
-    }
-    // Authorize: only the conversation owner or a tenant admin can trigger the bot.
+    // Bot ALWAYS replies — no human-takeover gate. Allow on both support and credit kinds.
     if (c.owner_id !== context.userId) {
       const { data: isAdmin } = await context.supabase.rpc("is_tenant_admin", {
         _user_id: context.userId,
