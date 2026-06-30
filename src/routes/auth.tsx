@@ -45,10 +45,11 @@ function mapAuthError(t: (k: string) => string, msg: string | undefined, kind: "
 function AuthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"email" | "phone">("email");
+  const [mode, setMode] = useState<"email" | "phone" | "password">("email");
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [code, setCode] = useState("");
