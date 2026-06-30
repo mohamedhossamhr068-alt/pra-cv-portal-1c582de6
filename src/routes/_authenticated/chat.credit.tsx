@@ -33,7 +33,7 @@ function CreditChat() {
             : "Request more credits from the admin. On approval, credits are added automatically."}
         </p>
       </div>
-      {q.data && <ChatPanel conversationId={q.data} kind="credit" showCreditRequest />}
+      {q.data && <ChatPanel conversationId={q.data} kind="credit" showCreditRequest triggerBot />}
     </div>
   );
 }
