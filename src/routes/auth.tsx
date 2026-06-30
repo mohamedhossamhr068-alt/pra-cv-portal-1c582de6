@@ -324,19 +324,26 @@ function AuthPage() {
                     {t("auth.or")}
                     <div className="h-px flex-1 bg-border" />
                   </div>
-                <form className="flex flex-col gap-3" onSubmit={sendCode} noValidate>
-                  <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/30 p-1">
+                <form className="flex flex-col gap-3" onSubmit={mode === "password" ? passwordSignIn : sendCode} noValidate>
+                  <div className="grid grid-cols-3 gap-1 rounded-lg border bg-muted/30 p-1">
                     <button
                       type="button"
                       onClick={() => { setMode("email"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-sm font-medium transition-colors ${mode === "email" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "email" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       {t("auth.email")}
                     </button>
                     <button
                       type="button"
+                      onClick={() => { setMode("password"); setEmailError(null); }}
+                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "password" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      كلمة المرور
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => { setMode("phone"); setEmailError(null); }}
-                      className={`h-9 rounded-md text-sm font-medium transition-colors ${mode === "phone" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`h-9 rounded-md text-xs font-medium transition-colors ${mode === "phone" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       رقم الهاتف
                     </button>
@@ -350,23 +357,7 @@ function AuthPage() {
                     <Label htmlFor="co">{t("auth.company")}</Label>
                     <Input id="co" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={120} />
                   </div>
-                  {mode === "email" ? (
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="em">{t("auth.email")}</Label>
-                      <Input
-                        id="em"
-                        type="email"
-                        value={email}
-                        onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
-                        placeholder="you@company.com"
-                        autoComplete="email"
-                        maxLength={255}
-                        aria-invalid={!!emailError}
-                        className={emailError ? "border-destructive focus-visible:ring-destructive/40" : undefined}
-                        required
-                      />
-                    </div>
-                  ) : (
+                  {mode === "phone" ? (
                     <div className="grid gap-1.5">
                       <Label htmlFor="ph">رقم الهاتف</Label>
                       <Input
@@ -384,6 +375,43 @@ function AuthPage() {
                       />
                       <p className="text-[11px] text-muted-foreground">أدخل الرقم بصيغة دولية تبدأ بـ + ومفتاح الدولة</p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="em">{t("auth.email")}</Label>
+                        <Input
+                          id="em"
+                          type="email"
+                          value={email}
+                          onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
+                          placeholder="you@company.com"
+                          autoComplete="email"
+                          maxLength={255}
+                          aria-invalid={!!emailError}
+                          className={emailError ? "border-destructive focus-visible:ring-destructive/40" : undefined}
+                          required
+                        />
+                      </div>
+                      {mode === "password" && (
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="pw">كلمة المرور</Label>
+                          <Input
+                            id="pw"
+                            type="password"
+                            value={password}
+                            onChange={(e) => { setPassword(e.target.value); if (emailError) setEmailError(null); }}
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            minLength={8}
+                            maxLength={128}
+                            required
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            إذا لم يكن لديك حساب، سيتم إنشاؤه تلقائياً.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                   {emailError && (
                     <p className="flex items-start gap-1.5 text-xs text-destructive">
@@ -398,6 +426,8 @@ function AuthPage() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         {t("auth.sending")}
                       </>
+                    ) : mode === "password" ? (
+                      "دخول / إنشاء حساب"
                     ) : (
                       t("auth.sendCode")
                     )}
