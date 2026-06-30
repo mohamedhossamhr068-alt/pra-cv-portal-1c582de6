@@ -105,7 +105,6 @@ export function ChatPanel({ conversationId, kind, showCreditRequest, canReview, 
           );
         }
       }
-      }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {

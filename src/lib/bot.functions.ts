@@ -43,12 +43,16 @@ export const triggerSupportBotReply = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conv } = await supabaseAdmin
       .from("conversations" as any)
-      .select("id, kind, owner_id, tenant_id")
+      .select("id, kind, bot_enabled, owner_id, tenant_id")
       .eq("id", data.conversation_id)
       .maybeSingle();
     if (!conv) return { ok: false, reason: "not_found" };
     const c = conv as any;
-    // Bot ALWAYS replies — no human-takeover gate. Allow on both support and credit kinds.
+    // Respect the staff "bot on/off" toggle, but only for support conversations
+    // (credit conversations don't expose this toggle and should always get a bot reply).
+    if (c.kind === "support" && c.bot_enabled === false) {
+      return { ok: false, reason: "disabled" };
+    }
     if (c.owner_id !== context.userId) {
       const { data: isAdmin } = await context.supabase.rpc("is_tenant_admin", {
         _user_id: context.userId,
