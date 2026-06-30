@@ -43,7 +43,7 @@ function mapAuthError(t: (k: string) => string, msg: string | undefined, kind: "
 }
 
 function AuthPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"email" | "phone" | "password">("email");
   const [step, setStep] = useState<"email" | "code">("email");
