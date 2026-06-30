@@ -79,6 +79,7 @@ function AuthPage() {
     .length(6, t("auth.errCodeShort"));
 
   const passwordSignIn = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const ar = i18n.language === "ar";
     setEmailError(null);
     const parsed = emailSchema.safeParse(email);
