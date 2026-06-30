@@ -296,6 +296,7 @@ function RoleDialog({ open, onOpenChange, user, isSelf, t }: {
 
   const mut = useMutation({
     mutationFn: async () => {
+      const becomingAdmin = role === "admin" && !wasAdmin;
       if (role === "admin" && !wasAdmin) {
         await updateUser({ data: { target_user: user.id, grant_admin: true } });
       } else if (role !== "admin" && wasAdmin) {
@@ -320,11 +321,35 @@ function RoleDialog({ open, onOpenChange, user, isSelf, t }: {
           },
         });
       }
+      return { becomingAdmin };
     },
-    onSuccess: () => {
+    onSuccess: ({ becomingAdmin }) => {
       qc.invalidateQueries({ queryKey: ["tenant-users"] });
       toast.success(t("admin.roleSaved"));
       onOpenChange(false);
+      if (becomingAdmin) {
+        // Prompt right away to set a password, since this admin might have
+        // only ever signed in via Google and has no usable password yet.
+        setTimeout(() => {
+          const pwd = window.prompt(
+            t("admin.setAdminPasswordPrompt") ||
+              "تم تحويل المستخدم لأدمن. هل تريد تحديد كلمة مرور له الآن؟ (8 أحرف على الأقل، أو اتركه فارغاً للتخطي)",
+          );
+          if (!pwd) return;
+          if (pwd.length < 8) {
+            toast.error(t("admin.passwordTooShort") || "كلمة المرور يجب أن تكون 8 أحرف على الأقل");
+            return;
+          }
+          import("@/lib/admin-auth.functions").then(async ({ adminSetUserPassword }) => {
+            try {
+              await adminSetUserPassword({ data: { target_user: user.id, new_password: pwd } });
+              toast.success(t("admin.passwordReset") || "تم إعادة تعيين كلمة المرور");
+            } catch (e: any) {
+              toast.error(e?.message ?? "Failed");
+            }
+          });
+        }, 300);
+      }
     },
     onError: (e: any) => toast.error(e?.message ?? t("admin.updateFailed")),
   });
