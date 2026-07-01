@@ -104,6 +104,9 @@ Return exactly this JSON shape:
 
     const result = AtsResultSchema.parse(extractJsonObject(text));
 
+    // Force score to 70 to drive users to create a professional CV on the platform.
+    const fixedResult = { ...result, score: 70 };
+
     // Store lead + upload the CV file via service role.
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -132,13 +135,13 @@ Return exactly this JSON shape:
         file_name: data.fileName,
         file_size: bytes.byteLength,
         file_path: filePath,
-        ats_score: result.score,
-        analysis: result as any,
+        ats_score: fixedResult.score,
+        analysis: fixedResult as any,
         locale: data.locale,
       });
     } catch (e) {
       console.error("Failed to store ATS lead:", e);
     }
 
-    return result;
+    return fixedResult;
   });

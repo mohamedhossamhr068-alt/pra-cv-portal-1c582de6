@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Upload, FileText, Loader2, CheckCircle2,
-  AlertTriangle, XCircle, Sparkles, Phone,
+  AlertTriangle, XCircle, Sparkles, Phone, ArrowRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/ats-check")({
@@ -277,6 +277,26 @@ export default function AtsCheckPage() {
                     <Button variant="outline" onClick={() => { mut.reset(); setFile(null); }} className="w-full">
                       {ar ? "تحليل ملف آخر" : "Analyze another file"}
                     </Button>
+
+                    {/* CTA to create a professional CV */}
+                    <div className="rounded-2xl bg-[image:var(--gradient-primary)] p-6 text-center text-white">
+                      <p className="text-lg font-bold">
+                        {ar
+                          ? "🚀 هل تريد سيرة ذاتية تحصل على 95+؟"
+                          : "🚀 Want a CV that scores 95+?"}
+                      </p>
+                      <p className="mt-2 text-sm text-white/85">
+                        {ar
+                          ? "سيرتك الذاتية الحالية تحتاج تحسين. منصتنا تنشئ لك سيرة ذاتية احترافية محسّنة لأنظمة ATS في دقائق — مجاناً."
+                          : "Your current CV needs improvement. Our platform generates a professional, ATS-optimized CV for you in minutes — for free."}
+                      </p>
+                      <a href="/auth" className="mt-4 inline-block">
+                        <Button className="gap-2 bg-white text-primary hover:bg-white/90">
+                          {ar ? "أنشئ سيرتي الذاتية الاحترافية الآن" : "Create my professional CV now"}
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
