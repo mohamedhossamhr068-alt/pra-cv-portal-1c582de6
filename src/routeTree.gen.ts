@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PendingApprovalRouteImport } from './routes/pending-approval'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AtsCheckRouteImport } from './routes/ats-check'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AdminSetPasswordRouteImport } from './routes/admin.set-password'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedJobsRouteImport } from './routes/_authenticated/jobs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -61,6 +63,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtsCheckRoute = AtsCheckRouteImport.update({
+  id: '/ats-check',
+  path: '/ats-check',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -74,6 +81,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
   getParentRoute: () => AuthRoute,
+} as any)
+const AdminSetPasswordRoute = AdminSetPasswordRouteImport.update({
+  id: '/admin/set-password',
+  path: '/admin/set-password',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -245,6 +257,7 @@ const AuthenticatedAdminChatCreditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ats-check': typeof AtsCheckRoute
   '/auth': typeof AuthRouteWithChildren
   '/pending-approval': typeof PendingApprovalRoute
   '/pricing': typeof PricingRoute
@@ -252,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/jobs': typeof AuthenticatedJobsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/set-password': typeof AdminSetPasswordRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/access': typeof AuthenticatedAdminAccessRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -282,12 +296,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ats-check': typeof AtsCheckRoute
   '/auth': typeof AuthRouteWithChildren
   '/pending-approval': typeof PendingApprovalRoute
   '/pricing': typeof PricingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/jobs': typeof AuthenticatedJobsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/admin/set-password': typeof AdminSetPasswordRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/access': typeof AuthenticatedAdminAccessRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -320,6 +336,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/ats-check': typeof AtsCheckRoute
   '/auth': typeof AuthRouteWithChildren
   '/pending-approval': typeof PendingApprovalRoute
   '/pricing': typeof PricingRoute
@@ -327,6 +344,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/jobs': typeof AuthenticatedJobsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/admin/set-password': typeof AdminSetPasswordRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/admin/access': typeof AuthenticatedAdminAccessRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -359,6 +377,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ats-check'
     | '/auth'
     | '/pending-approval'
     | '/pricing'
@@ -366,6 +385,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/jobs'
     | '/settings'
+    | '/admin/set-password'
     | '/auth/callback'
     | '/admin/access'
     | '/admin/approvals'
@@ -396,12 +416,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ats-check'
     | '/auth'
     | '/pending-approval'
     | '/pricing'
     | '/dashboard'
     | '/jobs'
     | '/settings'
+    | '/admin/set-password'
     | '/auth/callback'
     | '/admin/access'
     | '/admin/approvals'
@@ -433,6 +455,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/ats-check'
     | '/auth'
     | '/pending-approval'
     | '/pricing'
@@ -440,6 +463,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/jobs'
     | '/_authenticated/settings'
+    | '/admin/set-password'
     | '/auth/callback'
     | '/_authenticated/admin/access'
     | '/_authenticated/admin/approvals'
@@ -472,9 +496,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AtsCheckRoute: typeof AtsCheckRoute
   AuthRoute: typeof AuthRouteWithChildren
   PendingApprovalRoute: typeof PendingApprovalRoute
   PricingRoute: typeof PricingRoute
+  AdminSetPasswordRoute: typeof AdminSetPasswordRoute
   ApiPublicGuestChatRoute: typeof ApiPublicGuestChatRoute
   ApiPublicCronScrapeEgyptJobsRoute: typeof ApiPublicCronScrapeEgyptJobsRoute
 }
@@ -502,6 +528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ats-check': {
+      id: '/ats-check'
+      path: '/ats-check'
+      fullPath: '/ats-check'
+      preLoaderRoute: typeof AtsCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -522,6 +555,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/admin/set-password': {
+      id: '/admin/set-password'
+      path: '/admin/set-password'
+      fullPath: '/admin/set-password'
+      preLoaderRoute: typeof AdminSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -823,12 +863,24 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AtsCheckRoute: AtsCheckRoute,
   AuthRoute: AuthRouteWithChildren,
   PendingApprovalRoute: PendingApprovalRoute,
   PricingRoute: PricingRoute,
+  AdminSetPasswordRoute: AdminSetPasswordRoute,
   ApiPublicGuestChatRoute: ApiPublicGuestChatRoute,
   ApiPublicCronScrapeEgyptJobsRoute: ApiPublicCronScrapeEgyptJobsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
