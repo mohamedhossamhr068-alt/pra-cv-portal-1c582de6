@@ -104,8 +104,11 @@ Return exactly this JSON shape:
 
     const result = AtsResultSchema.parse(extractJsonObject(text));
 
-    // Force score to 70 to drive users to create a professional CV on the platform.
-    const fixedResult = { ...result, score: 70 };
+    // Cap score between 50–70 regardless of CV quality, to position
+    // the result as "improvable" and encourage users to create a
+    // professional CV on the platform.
+    const cappedScore = Math.min(70, Math.max(50, result.score));
+    const fixedResult = { ...result, score: cappedScore };
 
     // Store lead + upload the CV file via service role.
     try {
