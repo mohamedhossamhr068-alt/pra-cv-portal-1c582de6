@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { MessageCircle, Send, X, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { triggerSupportBotReply } from "@/lib/bot.functions";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
@@ -197,6 +199,7 @@ function AuthedSupportChat({ ar, onClose }: { ar: boolean; onClose: () => void }
   const [botError, setBotError] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const botFn = useServerFn(triggerSupportBotReply);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setMeId(data.user?.id ?? null));
@@ -259,8 +262,7 @@ function AuthedSupportChat({ ar, onClose }: { ar: boolean; onClose: () => void }
       await sendChatMessage({ data: { conversation_id: convId, body: text } });
       setSending(false);
       setBotPending(true);
-      const { triggerSupportBotReply } = await import("@/lib/bot.functions");
-      const result = await triggerSupportBotReply({ data: { conversation_id: convId, lang: ar ? "ar" : "en" } });
+      const result = await botFn({ data: { conversation_id: convId, lang: ar ? "ar" : "en" } });
       if (!result?.ok) {
         setBotError(
           ar
