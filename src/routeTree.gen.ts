@@ -41,6 +41,7 @@ import { Route as AuthenticatedAdminOffersRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin.notifications'
 import { Route as AuthenticatedAdminBrandingRouteImport } from './routes/_authenticated/admin.branding'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
+import { Route as AuthenticatedAdminAtsChecksRouteImport } from './routes/_authenticated/admin.ats-checks'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
 import { Route as AuthenticatedAdminAccessRouteImport } from './routes/_authenticated/admin.access'
 import { Route as ApiPublicCronScrapeEgyptJobsRouteImport } from './routes/api/public/cron/scrape-egypt-jobs'
@@ -218,6 +219,12 @@ const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminAtsChecksRoute =
+  AuthenticatedAdminAtsChecksRouteImport.update({
+    id: '/admin/ats-checks',
+    path: '/admin/ats-checks',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminApprovalsRoute =
   AuthenticatedAdminApprovalsRouteImport.update({
     id: '/admin/approvals',
@@ -269,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/access': typeof AuthenticatedAdminAccessRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/ats-checks': typeof AuthenticatedAdminAtsChecksRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/branding': typeof AuthenticatedAdminBrandingRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -307,6 +315,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/access': typeof AuthenticatedAdminAccessRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/ats-checks': typeof AuthenticatedAdminAtsChecksRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/branding': typeof AuthenticatedAdminBrandingRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -348,6 +357,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/admin/access': typeof AuthenticatedAdminAccessRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/_authenticated/admin/ats-checks': typeof AuthenticatedAdminAtsChecksRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/branding': typeof AuthenticatedAdminBrandingRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/admin/access'
     | '/admin/approvals'
+    | '/admin/ats-checks'
     | '/admin/audit'
     | '/admin/branding'
     | '/admin/notifications'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/admin/access'
     | '/admin/approvals'
+    | '/admin/ats-checks'
     | '/admin/audit'
     | '/admin/branding'
     | '/admin/notifications'
@@ -467,6 +479,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_authenticated/admin/access'
     | '/_authenticated/admin/approvals'
+    | '/_authenticated/admin/ats-checks'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/branding'
     | '/_authenticated/admin/notifications'
@@ -731,6 +744,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/ats-checks': {
+      id: '/_authenticated/admin/ats-checks'
+      path: '/admin/ats-checks'
+      fullPath: '/admin/ats-checks'
+      preLoaderRoute: typeof AuthenticatedAdminAtsChecksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/approvals': {
       id: '/_authenticated/admin/approvals'
       path: '/admin/approvals'
@@ -798,6 +818,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedAdminAccessRoute: typeof AuthenticatedAdminAccessRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
+  AuthenticatedAdminAtsChecksRoute: typeof AuthenticatedAdminAtsChecksRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminBrandingRoute: typeof AuthenticatedAdminBrandingRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
@@ -826,6 +847,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedAdminAccessRoute: AuthenticatedAdminAccessRoute,
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
+  AuthenticatedAdminAtsChecksRoute: AuthenticatedAdminAtsChecksRoute,
   AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
   AuthenticatedAdminBrandingRoute: AuthenticatedAdminBrandingRoute,
   AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
@@ -874,13 +896,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

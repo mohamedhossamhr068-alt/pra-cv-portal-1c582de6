@@ -22,6 +22,7 @@ import {
   Coins,
   UserCheck,
   Receipt,
+  FileCheck2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const adminItems: NavItem[] = [
     { to: "/admin/users", key: "users", label: t("admin.tileUsers"), icon: Users },
+    { to: "/admin/ats-checks", key: "ats-checks", label: i18n.language === "ar" ? "فحوصات ATS" : "ATS checks", icon: FileCheck2 },
     { to: "/admin/access", key: "access", label: i18n.language === "ar" ? "صلاحيات الواجهة" : "Access control", icon: ShieldCheck },
 
     { to: "/admin/pricing", key: "pricing", label: t("admin.tilePricing"), icon: SettingsIcon },

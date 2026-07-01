@@ -104,16 +104,39 @@ Return exactly this JSON shape:
 
     const result = AtsResultSchema.parse(extractJsonObject(text));
 
-    // Store lead (phone + score) via service role — no client auth needed.
+    // Store lead + upload the CV file via service role.
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      let filePath: string | null = null;
+      try {
+        const ts = Date.now();
+        const safeName = data.fileName.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+        filePath = `${new Date().toISOString().slice(0, 10)}/${ts}_${safeName}`;
+        const contentType =
+          data.fileType === "pdf"
+            ? "application/pdf"
+            : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        const { error: upErr } = await supabaseAdmin.storage
+          .from("ats-uploads")
+          .upload(filePath, bytes, { contentType, upsert: false });
+        if (upErr) {
+          console.error("ATS upload failed:", upErr.message);
+          filePath = null;
+        }
+      } catch (e) {
+        console.error("ATS upload threw:", e);
+      }
+
       await supabaseAdmin.from("ats_check_leads" as any).insert({
         phone: data.phone.trim(),
         file_name: data.fileName,
+        file_size: bytes.byteLength,
+        file_path: filePath,
         ats_score: result.score,
+        analysis: result as any,
+        locale: data.locale,
       });
     } catch (e) {
-      // Non-fatal — don't block the user if lead storage fails.
       console.error("Failed to store ATS lead:", e);
     }
 
