@@ -63,6 +63,12 @@ function Landing() {
             <Link to="/pricing" className="hidden sm:block">
               <Button variant="ghost" size="sm">{t("landing.ctaSecondary")}</Button>
             </Link>
+            <Link to="/ats-check" className="hidden sm:block">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                {i18n.language === "ar" ? "فحص ATS" : "ATS Check"}
+              </Button>
+            </Link>
             <Link to="/auth">
               <Button size="sm">{t("nav.signIn")}</Button>
             </Link>
@@ -131,6 +137,40 @@ function Landing() {
                 {t("landing.ctaPrimary")} <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ATS Check CTA — public, no login required */}
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+          <div className="relative overflow-hidden rounded-3xl bg-[image:var(--gradient-primary)] p-8 text-center sm:p-14">
+            <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+            <div className="relative">
+              <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur ring-1 ring-white/20">
+                <Sparkles className="h-3.5 w-3.5" />
+                {i18n.language === "ar" ? "مجاني بدون تسجيل" : "Free — no account needed"}
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                {i18n.language === "ar"
+                  ? "اعرف نتيجة سيرتك الذاتية الآن"
+                  : "Check your CV's ATS score instantly"}
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-white/80">
+                {i18n.language === "ar"
+                  ? "ارفع سيرتك الذاتية (PDF أو Word) واحصل على تقييم شامل لمدى توافقها مع أنظمة الفرز الآلي — مجاناً وبدون تسجيل."
+                  : "Upload your CV (PDF or Word) and get a detailed ATS compatibility score with actionable recommendations — completely free."}
+              </p>
+              <div className="mt-8">
+                <Link to="/ats-check">
+                  <Button size="lg" className="gap-2 bg-white text-primary hover:bg-white/90">
+                    {i18n.language === "ar" ? "افحص سيرتي الذاتية مجاناً" : "Check my CV — Free"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
