@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ats_check_leads: {
+        Row: {
+          ats_score: number | null
+          created_at: string
+          file_name: string | null
+          id: string
+          phone: string
+        }
+        Insert: {
+          ats_score?: number | null
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          phone: string
+        }
+        Update: {
+          ats_score?: number | null
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -286,6 +310,7 @@ export type Database = {
           industry: string | null
           location: string | null
           posted_at: string | null
+          salary_range: string | null
           seniority: string | null
           skills: string[] | null
           source: string | null
@@ -303,6 +328,7 @@ export type Database = {
           industry?: string | null
           location?: string | null
           posted_at?: string | null
+          salary_range?: string | null
           seniority?: string | null
           skills?: string[] | null
           source?: string | null
@@ -320,6 +346,7 @@ export type Database = {
           industry?: string | null
           location?: string | null
           posted_at?: string | null
+          salary_range?: string | null
           seniority?: string | null
           skills?: string[] | null
           source?: string | null
