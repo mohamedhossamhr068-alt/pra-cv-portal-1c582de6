@@ -16,24 +16,36 @@ export type Database = {
     Tables: {
       ats_check_leads: {
         Row: {
+          analysis: Json | null
           ats_score: number | null
           created_at: string
           file_name: string | null
+          file_path: string | null
+          file_size: number | null
           id: string
+          locale: string | null
           phone: string
         }
         Insert: {
+          analysis?: Json | null
           ats_score?: number | null
           created_at?: string
           file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
           id?: string
+          locale?: string | null
           phone: string
         }
         Update: {
+          analysis?: Json | null
           ats_score?: number | null
           created_at?: string
           file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
           id?: string
+          locale?: string | null
           phone?: string
         }
         Relationships: []
