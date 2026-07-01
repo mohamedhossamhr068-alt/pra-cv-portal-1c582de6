@@ -30,7 +30,7 @@ function AdminAtsChecks() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["ats-checks"],
     queryFn: () => listFn(),
   });
@@ -127,6 +127,10 @@ function AdminAtsChecks() {
             <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               {ar ? "جاري التحميل…" : "Loading…"}
+            </div>
+          ) : isError ? (
+            <div className="p-10 text-center text-sm text-destructive">
+              {(error as any)?.message ?? (ar ? "حدث خطأ أثناء تحميل البيانات" : "Failed to load data")}
             </div>
           ) : rows.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
