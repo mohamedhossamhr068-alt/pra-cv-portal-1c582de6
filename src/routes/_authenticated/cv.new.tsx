@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { generateCv } from "@/lib/cv.functions";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +33,10 @@ function NewCv() {
   const { i18n } = useTranslation();
   const ar = i18n.language === "ar";
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const fn = useServerFn(generateCv);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const [form, setForm] = useState({
     fullName: "",
@@ -115,10 +118,29 @@ function NewCv() {
       }),
     onSuccess: (res: any) => {
       toast.success(ar ? "تم إنشاء السي في" : "CV generated");
-      navigate({ to: `/cv/${res.id}` });
+      // Seed the CV viewer's query cache so the page renders immediately
+      // without needing a refresh.
+      if (res?.id) {
+        queryClient.setQueryData(["cv", res.id], {
+          id: res.id,
+          output: res.output,
+          analysis: res.analysis,
+          input: {
+            ...form,
+            companies: companies.filter((c) => c.name.trim() || c.role.trim()),
+            locale: ar ? "ar" : "en",
+          },
+          template: form.template,
+          accent_color: null,
+          created_at: new Date().toISOString(),
+        });
+        queryClient.invalidateQueries({ queryKey: ["cv", res.id] });
+        navigate({ to: `/cv/${res.id}` });
+      }
     },
     onError: (e: any) => toast.error(e?.message || "Failed"),
   });
+
 
   const hasValidCompany = companies.some((c) => c.name.trim() && c.role.trim());
   const canSubmit =
