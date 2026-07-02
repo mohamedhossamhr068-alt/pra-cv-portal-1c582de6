@@ -16,8 +16,7 @@ export const listAtsChecks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertStaff(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await context.supabase
       .from("ats_check_leads" as any)
       .select("id, phone, file_name, file_size, file_path, ats_score, analysis, locale, created_at")
       .order("created_at", { ascending: false })
@@ -37,8 +36,7 @@ export const getAtsFileUrl = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ file_path: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: signed, error } = await supabaseAdmin.storage
+    const { data: signed, error } = await context.supabase.storage
       .from("ats-uploads")
       .createSignedUrl(data.file_path, 60 * 10);
     if (error) throw new Error(error.message);
@@ -51,17 +49,16 @@ export const deleteAtsCheck = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { isSuper, isAdmin } = await assertStaff(context.supabase, context.userId);
     if (!isSuper && !isAdmin) throw new Error("Forbidden");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
+    const { data: row } = await context.supabase
       .from("ats_check_leads" as any)
       .select("file_path")
       .eq("id", data.id)
       .maybeSingle();
     const filePath = (row as any)?.file_path as string | null | undefined;
     if (filePath) {
-      await supabaseAdmin.storage.from("ats-uploads").remove([filePath]);
+      await context.supabase.storage.from("ats-uploads").remove([filePath]);
     }
-    const { error } = await supabaseAdmin.from("ats_check_leads" as any).delete().eq("id", data.id);
+    const { error } = await context.supabase.from("ats_check_leads" as any).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
