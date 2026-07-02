@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { geminiGenerateText } from "./gemini.server";
 import { openRouterGenerateText } from "./openrouter.server";
 
 const CvOutputSchema = z.object({
@@ -98,18 +97,7 @@ export async function generateTextWithFallback(opts: {
   jsonMode?: boolean;
   maxOutputTokens?: number;
 }): Promise<string> {
-  try {
-    return await openRouterGenerateText(opts);
-  } catch (openRouterErr: any) {
-    console.error("OpenRouter call failed, trying direct Gemini fallback:", openRouterErr?.message);
-    try {
-      return await geminiGenerateText(opts);
-    } catch (geminiErr: any) {
-      console.error("Gemini fallback also failed:", geminiErr?.message);
-      // Re-throw the original OpenRouter error.
-      throw openRouterErr;
-    }
-  }
+  return await openRouterGenerateText(opts);
 }
 
 
